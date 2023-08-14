@@ -1,0 +1,60 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" href="../style.css">
+</head>
+    
+<body id="bodybg">
+    
+    <div class="nav">
+        <div class="navInner">
+            <div class="navitem"><a href="../index.html">Jakob Quaade</a></div>
+            <div class="navitem"><a href="../index.html#aboutme">&#129492;&#127995;About Me</a></div>
+            <div class="navitem"><a href="../index.html#recentwork">&#128187;Recent Work</a></div>
+            <div class="navitem"><a href="../index.html#oldwork">&#128190;Older Work</a></div>
+            <div class="navitem"><a href="../index.html#contact">&#9742;&#65039;Contact</a></div>
+            <div class="navitem"><a href="../resume.pdf" target="_blank">&#128220;Resume</a></div>
+        </div>
+    </div>
+    <div class="projectmain">
+        <div class = "projectbody">
+            <div class = sectionBarAbout>
+            <div class = "projectHeading">Visual overhaul</div>
+            <div class = "projectSubtitle">Making tiny shapes readable at breakneak speeds.</div>
+            <div class = "centerbody">
+            <img class = "projectimage" src="../img2/angsetup.png"/>
+            </div>
+            
+            <br/>
+			Throughout most of the development of Rushdown Revolt we had to battle the issue of keeping relatively small character silhouettes readable and distinct while they are flying all over the place.
+			Icons had decided to use gamma color space for their rendering pipeline, which lead to over saturated colors and extremely bright colors wherever there was any sort of blending going on.
+			Eventually we decided to rip the band-aid off and migrate to a linear color space, which required fine-tuning almost every graphical asset. During this project i took the time to overhaul most of our visuals to make characters stand out better from the background, and generally make everything look a bit nicer.
+            <br/><br/>
+			Stage backgrounds were desaturated and the details on parts that would overlap with the characters were simplified, while characters recieved new shaders and their own lighting setup to help them stand out from the background.
+			
+			
+			<br/><br/><br/>
+            
+			<label for="foldout1" class="foldout-label">
+                <span class=foldout-icon>&#128065;&#65039;</span>Comparison Images</label>
+            <div class = "reel-container">
+                <div class="reel-image-holder">
+                    <img class="reel-img" src="../img2/combatlabold.png" />
+                </div>
+                <div class="reel-image-holder">
+                    <img class="reel-img" src="../img2/combatlabsnew.png" /> 
+                </div>
+            </div>
+			
+        </div>
+    </div>
+    </div>
+        <div class = "copyright">
+            <div class = "centerbody">
+                Copyright © 2023 by Jakob Quaade
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>

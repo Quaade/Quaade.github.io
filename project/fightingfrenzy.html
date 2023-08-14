@@ -1,0 +1,174 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" href="../style.css">
+</head>
+    
+<body id="bodybg">
+    
+    <div class="nav">
+        <div class="navInner">
+            <div class="navitem"><a href="../index.html">Tazz Stieglitz</a></div>
+            <div class="navitem"><a href="../index.html#aboutme">&#129492;&#127995;About Me</a></div>
+            <div class="navitem"><a href="../index.html#recentwork">&#128187;Recent Work</a></div>
+            <div class="navitem"><a href="../index.html#oldwork">&#128190;Older Work</a></div>
+            <div class="navitem"><a href="../index.html#contact">&#9742;&#65039;Contact</a></div>
+            <div class="navitem"><a href="../resume.pdf" target="_blank">&#128220;Resume</a></div>
+        </div>
+    </div>
+    <div class="projectmain">
+        <div class = "projectbody">
+            <div class = sectionBarAbout>
+            <div class = "projectHeading">Fighting Frenzy</div>
+            <div class = "projectSubtitle">AI-generated card game</div>
+            <!--div class = "projectSubheading">Project Overview</div-->
+            <img class = "projectimage" style="border-radius: 13px;" src="img/fightingfrenzy_cards_two.png"/>
+                <br/>
+                
+                
+                    <div class="storyhighlights">
+                        <div class="highlight dh"><span class = "date">2022</span></div>
+                        <div class="highlight design dh">Machine Learning Experiment</div>
+                        <div class="highlight implementation dh">Python / GPT3 / Stable Diffusion</div>
+                        <div class="highlight collaboration dh">Solo</div>
+                    </div>
+            </div>
+            
+            
+            <br/><br/>
+            Fighting Frenzy was an exploratory project I built over the course of a weekend in late 2022 to explore the potential uses of machine learning and AI in game design. The basic premise was to see how much of a game's overall design could be produced by an LLM (Large Language Model), keeping human involvement as minimal as possible outside of infrastructure and implementation.
+            <br/><br/>
+            The project used GPT-3 for game design and mechanics and Stable Diffusion for card art. Additionally, I used this project as an opportunity to explore some data analysis and visualization techniques, as well as to brush up on my python.
+            <br/><br/><br/>
+            
+            
+            <div class="foldout">
+                <input id="foldout1" class="foldout-toggle" type="checkbox">
+                <label for="foldout1" class="foldout-label">
+                <span class=foldout-icon>&#128213;</span>Ruleset Generation</label>
+                <div class="foldout-content">
+                    <div class="foldout-inner">
+                        Everything in Fighting Frenzy is AI-generated, including the game's core ruleset.
+                        <br />
+                        <br />The process of generating this ruleset mainly consisted of an interactive prompting-and-playtesting loop that roughly adhered to the following pattern:
+                        <ol>
+                            <li>Prompt GPT-3 to generate an initial ruleset.</li>
+                            <li>Generate several hundred cards with the specified ruleset.</li>
+                            <li>Play a few matches with a friend using the cards generated, noting down feedback as we play.</li>
+                            <li>Prompt GPT-3 to modify the previously generated ruleset to account for problems identified in playtesting.</li>
+                            <li>Repeat steps 2-4 until a satisfactory ruleset is achieved.</li>
+                        </ol>
+                        
+                        This cycle, while a bit less responsive than manual iteration, produced surprisingly cogent results, and after a few passes left us with a reasonable and fully playable ruleset.
+                    </div>
+                </div>
+            </div>
+            
+            
+            <div class="foldout">
+                <input id="foldout2" class="foldout-toggle" type="checkbox">
+                <label for="foldout2" class="foldout-label">
+                <span class=foldout-icon>&#127924;</span>Card Generation</label>
+                <div class="foldout-content">
+                    <div class="foldout-inner">
+                        <img class="img-center" width="90%" src="img/fightingfrenzy_cards.png" />
+                        <br/>
+                        Card-generation was achieved via a command-line python tool I built. The primary method of producing new cards involved prompting GPT-3 with the following information:
+                        <ul>
+                            <li>a copy of the ruleset</li>
+                            <li>a specification of the card format so that results would be machine-parseable</li> 
+                            <li>a brief description of the kind of cards to generate (eg "Generate cards from the Goblin set, which focus on Poison and Traps").</li>
+                        </ul>
+                        <br/>
+                        Additionally, the tool exposed functionality for several other features:
+                        
+                        <ul>
+                            <li>Manual modification of cards</li>
+                            <li>AI-based modification of cards, in which the user could ask for specific cards to be reworked or improved</li>
+                            <li>Various visualizations and analytics performed across the database generated cards</li>
+                            <li>Tools for ranking and comparing cards by uniqueness or power</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="foldout">
+                <input id="foldout5" class="foldout-toggle" type="checkbox">
+                <label for="foldout5" class="foldout-label">
+                <span class=foldout-icon>&#128202;</span>Data Visualization</label>
+                <div class="foldout-content">
+                    <div class="foldout-inner">
+                        <img class="img-center" width="100%" src="img/fightingfrenzy_vis.png" />
+                    <br/>
+                        In order to more easily evaluate the relatively large number of cards I was generating, I implemented a toolkit  for AI-assisted data visualization. This would also double as an opportunity to use a python library I had been looking at called <i>scikit-learn</i>, which included both machine learning and data visualization tools.
+                        <br/><br/>
+                        The primary visualization I relied on (shown above) was generated via the following process:
+                        <ol>
+                            <li>For every card, I produce an <i>embedding</i> using GPT-3. These embeddings are high-dimensional vectors that correspond to the card's representation in the first layer of the neural network.</li>
+                            <li>I then reduce these vectors to a 2-dimensional space using a dimensionality reduction technique known as <i>t-distributed stochastic neighbor embedding</i>, or <i>t-SNE</i>, which produces a human-readable representation of the similarity between cards.</li>
+                            <li>Additionally, we group the embeddings into several clusters of similar cards using an algorithm called <i>K-Means</i>. This produces the colored segments shown above, representing groups of semantically similar card effects.</li>
+                            <li>Finally, I produce an analysis of each identified cluster by feeding a set of example card effects from that cluster back into GPT-3, along with a prompt to identify the similarities between them.</li>
+                            <li>All of this data is then presented in the above visualization, which also includes interactive functionality for inspecting individual cards.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            
+            
+            <div class="foldout">
+                <input id="foldout2b" class="foldout-toggle" type="checkbox">
+                <label for="foldout2b" class="foldout-label">
+                <span class=foldout-icon>&#128200;</span>Automated Data Analysis</label>
+                <div class="foldout-content">
+                    <div class="foldout-inner">
+                        <img width="100%" src="img/fightingfrenzy_man.png" />
+                        Due to the limited input bandwidth (called "context") available to a GPT-3 prompt, it wasn't possible for cards to be generated in a way that was aware of all existing pre-generated cards. Because of this, very similar cards tended to be generated repeatedly across different batches, especially when asking for a specific theme or keyword. For example, when asked for poison cards, almost any batch would contain a couple baseline "deal damage and apply poison" cards. 
+                        <br/><br/>
+                        In order to facilitate a more interesting and diverse set of card effects, I built an automated pipeline to cull these similar cards and replace them with new, more unique cards. This system utilized a GPT-3 endpoint that generates an <i>embedding</i> from a given text string -- a numerical representation of the neural network's understanding of the concept represented by that text.
+                        <br/><br/>
+                        By computing embeddings for all of our generated cards and then comparing them via various distance functions, we're able to get a rough idea of which cards are similar to which other cards. We can then automate a process that eliminates cards that are too close together in the embedded space, condensing clusters of very similar cards into a single representative card. Additionally, if we wish to maintain the overall distribution of card effects, we can ask GPT-3 to re-generate thematically similar but mechanically distinct versions of the removed cards, and repeat the process until satisfied with the overall variety and distribution of cards.
+                    </div>
+                </div>
+            </div>
+            
+            
+            <div class="foldout">
+                <input id="foldout3" class="foldout-toggle" type="checkbox">
+                <label for="foldout3" class="foldout-label">
+                <span class=foldout-icon>&#128260;</span>Amplifcation</label>
+                <div class="foldout-content">
+                    <div class="foldout-inner">
+                        Fighting Frenzy provided a few particularly compelling opportunities to explore a machine learning technique known as <i>Amplification</i>, which allows us to turn a bad or inefficient decision process into a more effective one by repeating the process.
+                        <br/><br/>
+                        The initial problem that prompted this exploration was GPT-3's difficulty adhering strictly to the JSON spec I expected cards to be generated in. Results correctly adhered to the format for about 90% of generated cards. Because cards were generated in large batches, a 10% fail rate per card resulted in a large frequency of unparsable batches.
+                        <br/><br/>
+                        In order to fix this problem, I passed any set of cards that failed to parse back to the GPT-3, this time asking it to correct formatting errors in the JSON. With an ~80% success rate on identifying these errors, our overall success rate improved from about 90% to about 98%. It's worth noting that this process wasn't indefinitely repeatable - If GPT was unable to identify an error in its first correction pass, it was very unlikely to identify that same error if asked again.
+                        <br/><br/>
+                        A similar process could be performed within the domain of card design - by asking GPT to generate several variants of a card, discarding the less interesting or unique results, and then repeating the process, I was able to automate a system that resulted in overall more compelling cards without any additional human input.
+                    </div>
+                </div>
+            </div>
+            
+            
+            <div class="foldout">
+                <input id="foldout4" class="foldout-toggle" type="checkbox">
+                <label for="foldout4" class="foldout-label">
+                <span class=foldout-icon>&#127912;</span>Card Art</label>
+                <div class="foldout-content">
+                    <div class="foldout-inner">
+                        Card art was generated by Stable Diffusion, using a model I fine-tuned to produce results in a relatively consistent style appropriate for card art. Text prompts for image generation were generated by GPT-3 and modified via a special set of weights and parameters manually tuned for this specific use case.
+                    </div>
+                </div>
+            </div>
+            
+            
+        </div>
+    </div>
+        <div class = "copyright">
+            <div class = "centerbody">
+                Copyright © 2023 by Tazz Stieglitz
+            </div>
+        </div>
+    
+</body>
+</html>
