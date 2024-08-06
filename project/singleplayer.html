@@ -19,8 +19,8 @@
     <div class="projectmain">
         <div class = "projectbody">
             <div class = sectionBarAbout>
-            <div class = "projectHeading">Level Design and Tooling</div>
-            <div class = "projectSubtitle">Designing Levels and Tooling for use in singleplayer content</div>
+            <div class = "projectHeading">Tooling</div>
+            <div class = "projectSubtitle">Designing tools for use in singleplayer content</div>
             <div class = "projectSubheadingVideo"> </div>
             <div class = "centerbody">
                 <div class="projectvideo">
@@ -33,7 +33,6 @@
                         <div class="highlight dh"><span class = "date">2022</span></div>
                         <div class="highlight design dh">Tooling</div>
                         <div class="highlight collaboration dh">Programming</div>
-						<div class="highlight collaboration dh">Level Design</div>
                     </div>
             </div>
             
@@ -41,16 +40,12 @@
             <br/><br/>
 			
 			<br/>
-			Towards the beginning of 2022 we looked at alternative ways of teaching players how to play Rushrev. The existing tutorial was a very straight forward "Here's the rules of the games and what buttons do what", and leadership wanted a something more akin to a tradition platforming experience ready on a tight deadline.
-			This presented some unique problems. Not only was our tooling for developing single player content like this extremely primitive, we also had to find out how to teach players how to play a fighting game through a Platforming experience.
-            <br/><br/>
-			After some rapid whiteboard prototyping we ended up creating a 3 level tutorial that could be completed in roughly 15 minutes.<br/>
-			The first level teaching players basic movement such as running, jumping, and using different attacks for traversal and interacting with the enviroment.<br/>
-			The second level was then focused on teaching the spark system, starting out with teaching the players about the Universal Rush mechanic, and then later incoorporating Sparking.<br/>
-			The final level then put the player against a CPU controlled enemy in a regular match (though heavily skewed towards the player).
+			Towards the beginning of 2022 we looked at alternative ways of teaching players how to play Rushrev. The existing tutorial was a very straight forward "Here's the rules of the games and what buttons do what", and we wanted something more akin to a tradition platforming experience ready on a tight deadline.
+			To speed up the development of the tutorial, we decided to use an old existing system for designing and delivering levels over the internet. This meant we couldn't rely on Unity's build in editor tools, as we needed to be able to both develop them during run time, and serialize them to a format that could easily be shared.
             <br/><br/>
 			The single player content tools we had were very barebones and was originally meant to be used for very simple time-trial stages with simple visuals. <br/>
 			The complexity of the tutorial levels were way beyond the scope of the previous tooling, and since the tutorial would be the first thing new players saw, we wanted to be able to make more visually interesting levels.
+			To that end, i designed a level editor that allowed us to rapidly design and juice up the tutorial, as well as any future single player content we might make.
 			<br/><br/><br/>
             
 			<label for="foldout1" class="foldout-label">
