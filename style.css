@@ -121,7 +121,6 @@
     z-index:0;
 }
 
-    
     .projectHeading{
         text-align: center;
         font-size: 40;
@@ -406,6 +405,10 @@
         outline: #FFFFFF33 solid 2px;
         background-image: linear-gradient(#00000088, #332233);
         #background-color:#00000044;
+    }
+
+    .single-item-container::after {
+        content: none;
     }
 
     .story-fake{
