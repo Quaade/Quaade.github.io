@@ -1,306 +1,1007 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jakob Quaade — Game Designer & Programmer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080808;
+      --surface: #111111;
+      --surface2: #181818;
+      --border: #222222;
+      --accent: #e8601c;
+      --accent-dim: rgba(232,96,28,0.15);
+      --accent-glow: rgba(232,96,28,0.35);
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --text-dim: #555;
+      --font-head: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(1.5rem, 5vw, 4rem);
+      height: 64px;
+      background: rgba(8,8,8,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s;
+    }
+    nav.scrolled { border-bottom-color: var(--border); }
+
+    .nav-logo {
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      background: var(--accent);
+      color: #fff !important;
+      padding: 0.45rem 1.1rem;
+      border-radius: 6px;
+      transition: opacity 0.2s !important;
+    }
+    .nav-cta:hover { opacity: 0.85; color: #fff !important; }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px clamp(1.5rem, 5vw, 4rem) 60px;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .hero-video-wrap {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    .hero-video-wrap iframe {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 177.78vh;
+      height: 56.25vw;
+      min-width: 100%;
+      min-height: 100%;
+      pointer-events: none;
+    }
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(8,8,8,0.55) 0%,
+        rgba(8,8,8,0.45) 40%,
+        rgba(8,8,8,0.85) 85%,
+        rgba(8,8,8,1) 100%
+      );
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-glow);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-tag::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    .hero h1 {
+      font-family: var(--font-head);
+      font-size: clamp(3rem, 8vw, 6rem);
+      font-weight: 700;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 span { color: var(--accent); }
+
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: rgba(240,240,240,0.75);
+      max-width: 560px;
+      margin: 0 auto 2.5rem;
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.75rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #d45518;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .scroll-hint-line {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, var(--text-dim), transparent);
+      animation: scrollDown 2s ease-in-out infinite;
+    }
+    @keyframes scrollDown {
+      0% { transform: scaleY(0); transform-origin: top; }
+      50% { transform: scaleY(1); transform-origin: top; }
+      51% { transform: scaleY(1); transform-origin: bottom; }
+      100% { transform: scaleY(0); transform-origin: bottom; }
+    }
+
+    /* ── SECTIONS ── */
+    section {
+      padding: clamp(4rem, 8vw, 7rem) clamp(1.5rem, 5vw, 4rem);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      max-width: 40px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .section-title {
+      font-family: var(--font-head);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+    }
+
+    .section-subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      font-weight: 300;
+      max-width: 520px;
+      line-height: 1.7;
+      margin-bottom: 3rem;
+    }
+
+    /* ── ABOUT ── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+    .about-text p {
+      color: var(--text-muted);
+      line-height: 1.8;
+      margin-bottom: 1.25rem;
+      font-weight: 300;
+    }
+    .about-text p strong { color: var(--text); font-weight: 500; }
+
+    .about-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .stat-card:hover { border-color: var(--accent); }
+    .stat-number {
+      font-family: var(--font-head);
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── SKILLS ── */
+    .skills-full { max-width: 1100px; }
+
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .skill-category {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .skill-category:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .skill-cat-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+    .skill-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .skill-tag {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+    }
+
+    /* ── EXPERIENCE ── */
+    .experience-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .exp-item {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 2.5rem;
+      padding: 2.5rem 0;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .exp-item:last-child { border-bottom: none; }
+
+    .exp-meta {
+      padding-top: 0.15rem;
+    }
+    .exp-date {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      font-family: var(--font-head);
+    }
+    .exp-company {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .exp-content {}
+    .exp-role {
+      font-family: var(--font-head);
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+    }
+    .exp-type {
+      display: inline-flex;
+      align-items: center;
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.9rem;
+    }
+    .exp-bullets {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .exp-bullets li {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.6;
+      padding-left: 1.1rem;
+      position: relative;
+    }
+    .exp-bullets li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.65em;
+      width: 4px; height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+    .exp-nda {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 0.82rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: 6px;
+      font-style: italic;
+    }
+
+    /* ── VIDEO SHOWCASE ── */
+    .showcase {
+      max-width: 1100px;
+    }
+    .video-container {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    }
+    .video-container::before {
+      content: '';
+      display: block;
+      padding-top: 56.25%;
+    }
+    .video-container iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .video-caption {
+      margin-top: 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-weight: 300;
+      text-align: center;
+    }
+
+    /* ── CONTACT ── */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+    .contact-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    .contact-link {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .contact-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateX(4px);
+    }
+    .contact-link-icon {
+      width: 36px; height: 36px;
+      background: var(--surface2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .contact-detail {
+      flex: 1;
+    }
+    .contact-detail small {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.1rem;
+    }
+
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .form-group label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .form-group input,
+    .form-group textarea {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: vertical;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus { border-color: var(--accent); }
+    .form-group textarea { min-height: 120px; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem clamp(1.5rem, 5vw, 4rem);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    footer p {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+    footer span { color: var(--accent); }
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .footer-links a {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── DIVIDER ── */
+    .full-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0;
+    }
+
+    /* ── FADE-IN ── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+      .contact-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+      .exp-item { grid-template-columns: 1fr; gap: 0.5rem; }
+      .exp-meta { display: flex; gap: 1rem; align-items: baseline; }
+    }
+  </style>
 </head>
-    
-<body id="bodybg">
-    
-    <div class="nav">
-        <div class="navInner">
-            <div class="navitem"><a href="../index.html">Jakob Quaade</a></div>
-            <div class="navitem"><a href="#aboutme">&#128102;&#127996;About Me</a></div>
-            <div class="navitem"><a href="#recentwork">&#128187;Recent Work</a></div>
-            <div class="navitem"><a href="#oldwork">&#128190;Older Work</a></div>
-            <div class="navitem"><a href="#contact">&#9742;&#65039;Contact</a></div>
-            <div class="navitem"><a href="resume.pdf" target="_blank">&#128220;Resume</a></div>
-        </div>
+<body>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <a href="#" class="nav-logo">Jakob<span>.</span></a>
+    <ul class="nav-links">
+      <li><a href="#about">About</a></li>
+      <li><a href="#skills">Skills</a></li>
+      <li><a href="#experience">Experience</a></li>
+      <li><a href="#work">Work</a></li>
+      <li><a href="#contact" class="nav-cta">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-bg">
+      <div class="hero-video-wrap">
+        <iframe
+          src="https://www.youtube.com/embed/_2VK3VQHNzo?autoplay=1&mute=1&loop=1&playlist=_2VK3VQHNzo&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1"
+          title="Background reel"
+          allow="autoplay; encrypted-media"
+          allowfullscreen>
+        </iframe>
+      </div>
+      <div class="hero-overlay"></div>
     </div>
-	
-	<div class = "video">
-            <div id="player-size" style="">
-              <div id="cropping-div" style="">
-                <div id="div-to-crop" style="">
-                  <div id="player-wrapper">
-                    <iframe id="player" src="https://www.youtube.com/embed/_2VK3VQHNzo?controls=0&autoplay=1&mute=1&loop=1&vq=hd1080&playlist=_2VK3VQHNzo" title="YouTube video player" frameborder="0" allow=" autoplay; encrypted-media;"></iframe>
-                  </div>
-                </div>
-              </div>
-            </div>
-        </div>
-	
-    <div class="main">
-        
-        <div class = "aboutme" id = "aboutme">
-            <div class = sectionBarAbout>
-            <div class = "sectionHeading">About Me</div>
-            
-            <div class = "centerbody">
-			<br/><br/><br/><br/><br/>
-			Hey there, I'm Jakob. I'm a game programmer and designer from Denmark with expertise in combat and level design as well as experience with various disciplines. <br/><br/>
-            I've been making games for since i was 12,, starting with mods for Warcraft 3, and then moving on to making and releasing my own games.<br/>
-            <br/><br/>
-			Throughout the years i have worked on many different disciplines including Combat design, level design, VFX work, tool development, engine programming, sound design, lighting, shader work and more. Recently i've worked as gameplay designed and programmer at Rockstar, though the project is under strict NDA.
-			<br/><br/>
-			This site is a collection of some of the projects i have worked on - both professional and personal.
-			If you only check out one thing on this site though, i suggest taking a look at the <a href="project/seth_spotlight.html" style="text-decoration: underline;">Seth Character Spotlight</a> or my <a href="resume.pdf" target="_blank" style="text-decoration: underline;">resume.</a>
-			<br/><br/><br/>
-			</div>
-            </div>
-            
-            <!--
-			<div class="qualities">
-                <div class="qualityInner">
-                    <div class="qualityHeader">Skillset</div>
-                    <div class="qualityList"><span class="stars">&#9733;&#9733;&#9733;</span>&nbsp; Game Design</div>
-                    <div class="qualityList"><span class="stars">&#9733;&#9733;&#9733;</span>&nbsp; Software Devleopment</div>
-                    <div class="qualityList"><span class="stars">&#9733;&#9733;</span><span class="starsEmpty">&#9734;</span>&nbsp; Project Management</div>
-                </div>
-                <div class="qualityInner">
-                    <div class="qualityHeader">Experience</div>
-                    <div class="qualityList"><span class="experienceYears">3yr</span>Game Design & Engineering Team Lead</div>
-                    <div class="qualityList"><span class="experienceYears">12yr</span>Solo Game Development</div>
-                    <div class="qualityList"><span class="experienceYears">2yr</span>Freelance Software Development</div>
-                </div>
-            </div>
-			
-        </div>
-        <div class = "guide" id = "howtouse">
-            <div class = sectionBar>
-            <div class = "sectionHeading">Navigating this portfolio</div>
-            </div>
-                This portfolio contains a lot of information, organized via the gallery of projects and anecdotes below. To read more about a specific item, click on it to bring up a detailed information page.
-            <br /><br />
-            My goal is to provide a viewport into a wide range of situations  so that you can form your own opinions of my capabilities.
-                I would encourage browsing through the gallery below and checking out the items that interest you, but if you're short on time, I'd recommend taking a look at the <a class="showanchor" href="project/raymer_spotlight.html">Raymer Character Spotlight</a>, my participation in <a class="showanchor" href="project/character_dev.html">RushRev's Character Production Pipeline</a>, or an overview of <a class="showanchor" href="project/ptb.html">my latest Flash game, Press The Button</a>.
-            <br /><br />
-                If you're really short on time, you could simply check out <a class="showanchor" target="_blank" href="resume.pdf">my resume</a> instead. 
-                <br />
-<!--
-            <div class="qualities">
-                <div class="qualityInner">
-                    <div class="qualityHeader">Combat Designer</div>
-                    <div class="qualityList">Raymer Character Spotlight</div>
-                    <div class="qualityList">Reworks</div>
-                    <div class="qualityList">Fusion Characters</div>
-                </div>
-                <div class="qualityInner">
-                    <div class="qualityHeader">Game Designer</div>
-                    <div class="qualityList">Raymer Character Spotlight</div>
-                    <div class="qualityList">Reworks</div>
-                    <div class="qualityList">Fusion Characters</div>
-                </div>
-                <div class="qualityInner">
-                    <div class="qualityHeader">Multidiscipline</div>
-                    <div class="qualityList">Raymer Character Spotlight</div>
-                    <div class="qualityList">Reworks</div>
-                    <div class="qualityList">Fusion Characters</div>
-                </div>
-            </div>
--->
-        </div>
 
-        <div class = "sectionHeading">Rockstar
-			<span class = "date"><br>Project under strict NDA</span>
-		</div>
-
-        <br/><br/><br/><br/><br/><br/>
-        
-        <div class = "rushdownrevolt" id = "recentwork">
-            <div class = sectionBar>
-            
-            <div class = "centerbody" style = "margin-top:-20; margin-bottom:16">
-                
-            </div>
-            
-            <div class = "centerbody">
-                Contract Work at Rockstar Studios.
-            </div>
-            </div>
-
-            <div class="storycontainer single-item-container" style="display: flex; justify-content: center; width: 100%;">
-            <div class="story">
-                <div class="tagoverview">Overview</div>
-                <img class="storyimage" src="img/rockstar.png"/>
-                <div class="storytitle">Contract Work</div>
-                <div class="storyhighlights">
-                    <div class="highlight design">Design</div>
-                    <div class="highlight implementation">Programming</div>
-                </div>
-                <div class="storydesc">I worked as a gameplay designer and programmer at Rockstar over a 7 month period.</div>
-            </div>
-        </div>
-
-
-		<div class = "sectionHeading">Rushdown Revolt
-			<span class = "date"><br>Click on a tile to learn more</span>
-		</div>
-		
-		<br/><br/><br/><br/><br/><br/>
-		
-        <div class = "rushdownrevolt" id = "recentwork">
-            <div class = sectionBar>
-            
-            <div class = "centerbody" style = "margin-top:-20; margin-bottom:16">
-                
-            </div>
-            
-            <div class = "centerbody">
-                A collection of showcases from my work on Rushdown Revolt.
-            </div>
-            </div>
-            
-            <div class="storycontainer">
-                <a class="story story_hl" href="project/rushdown_overview.html">
-                    <div class="tagoverview">Overview</div>
-                    <img class="storyimage" src="img/rrlogo.png"/>
-                    <div class="storytitle">Project Overview</div>
-                    <div class="storyhighlights">
-                        <div class="highlight misc">Role & Responsibilities</div>
-                    </div>
-                    <div class="storydesc">RushRev is a platform fighter with a focus on fast-paced competitive gameplay and exciting combos.</div>
-                </a>
-                <a class="story" href="project/seth_spotlight.html">
-                    <div class="tagshowcase">Showcase</div>
-                    <img class="storyimage" src="img/raymerspotlight.png"/>
-                    <div class="storytitle">Seth Character Spotlight</div>
-                    <div class="storyhighlights">
-                        <div class="highlight design">Design</div>
-                    </div>
-                    <div class="storydesc">A promotional video for one of the playable characters i designed for Rushdown Revolt.</div>
-                </a>
-<!--
-                <a class="story" href="project/story.html">
-                    <div class="tagstory">Story</div>
-                    <img class="storyimage" src="img/evoclip.png"/>
-                    <div class="storytitle">[TODO title]</div>
-                    <div class="storyhighlights">
-                        <div class="highlight collaboration">Teamwork</div>
-                        <div class="highlight implementation">Programming</div>
-                    </div>
-                    <div class="storydesc">A story from early on in my time at Rushdown showcasing my collaborative nature.</div>
-                </a>
--->
-                <a class="story" href="project/reworks.html">
-                    <div class="tagstory">Story</div>
-                    <img class="storyimage" src="img/ashaniblink.png"/>
-                    <div class="storytitle">Character Reworks</div>
-                    <div class="storyhighlights">
-                        <div class="highlight design">Design</div>
-                    </div>
-                    <div class="storydesc">A showcase of some of my design work establishing gameplay identities across the game's roster of characters.</div>
-                </a>
-                <a class="story" href="project/fusions.html">
-                    <div class="tagshowcase">Showcase</div>
-                    <img class="storyimage" src="img/weiseth.png"/>
-                    <div class="storytitle">Fusion Characters</div>
-                    <div class="storyhighlights">
-                        <div class="highlight design">Design</div>
-                    </div>
-                    <div class="storydesc">Fusion Characters were an initiative that I oversaw to rapidly develop new characters with minimal asset costs.</div>
-                </a>
-                <a class="story" href="project/character_dev.html">
-                    <div class="tagshowcase">Showcase</div>
-                    <img class="storyimage" src="img/reina.png"/>
-                    <div class="storytitle">New Characters</div>
-                    <div class="storyhighlights">
-                        <div class="highlight design">Design</div>
-                        <div class="highlight collaboration">Teamwork</div>
-                    </div>
-                    <div class="storydesc">An outline of my involvement in RushRev's character production pipeline.</div>
-                </a>
-				<a class="story" href="project/leveldesign.html">
-                    <div class="tagshowcase">Showcase</div>
-                    <img class="storyimage" src="img2/leveldesign3.png"/>
-                    <div class="storytitle">Singleplayer Level Design</div>
-                    <div class="storyhighlights">
-                        <div class="highlight design">Design</div>
-                    </div>
-                    <div class="storydesc">Designing a singleplayer platforming experience to teach players Rushrev.</div>
-                </a>
-                <a class="story" href="project/visuals.html">
-                    <div class="tagstory">Story</div>
-                    <img class="storyimage" src="img2/combatlabsnew.png"/>
-                    <div class="storytitle">Lighting and Visual overhaul</div>
-                    <div class="storyhighlights">
-                        <div class="highlight implementation">Lighting</div>
-                        <div class="highlight implementation">Shaders</div>
-						<div class="highlight collaboration">Adaptability</div>
-                    </div>
-                    <div class="storydesc">I was in charge of updating our character shaders, stage lighting, VFX and more, to combat the games visibility problem.</div>
-                </a>
-                <a class="story" href="project/trainingmode.html">
-                    <div class="tagstory">Story</div>
-                    <img class="storyimage" src="img2/trainingframescreen.png"/>
-                    <div class="storytitle">Training Mode</div>
-                    <div class="storyhighlights">
-                        <div class="highlight implementation">Programming</div>
-                        <div class="highlight implementation">UI</div>
-                    </div>
-                    <div class="storydesc">I implemented player facing tools for the in-game training mode.</div>
-                </a>
-                <a class="story" href="project/stages.html">
-                    <div class="tagstory">Story</div>
-                    <img class="storyimage" src="img2/heights.png"/>
-                    <div class="storytitle">Kitbashed stages</div>
-                    <div class="storyhighlights">
-                        <div class="highlight collaboration">Adaptability</div>
-                        <div class="highlight implementation">Level Design</div>
-						<div class="highlight implementation">Lighting</div>
-                    </div>
-                    <div class="storydesc">I designed and implemented several new stages and stage gimmicks using existing assets.</div>
-                </a>
-                <a class="story" href="project/singleplayer.html">
-                    <div class="tagstory">Story</div>
-                    <img class="storyimage" src="img2/leveltooling.png"/>
-                    <div class="storytitle">Tooling</div>
-                    <div class="storyhighlights">
-                        <div class="highlight implementation">Level Design</div>
-						<div class="highlight implementation">Programming</div>
-                    </div>
-                    <div class="storydesc">I designed and implemented a single player platforming experience meant to teach the players how to play RushRev.</div>
-                </a>
-                <a class="story" href="project/rainbow.html">
-                    <div class="tagstory">Story</div>
-                    <img class="storyimage" src="img/rainbow.png"/>
-                    <div class="storytitle">Rushdown Rainbow</div>
-                    <div class="storyhighlights">
-                        <div class="highlight design">Design</div>
-                        <div class="highlight collaboration">Adaptability</div>
-                    </div>
-                    <div class="storydesc">An April Fools version of the game where every character was completely redesigned made in a couple of weeks.</div>
-                </a>
-                <div class="story-fake"></div>
-<!--
-                <a class="story" href="project/clips.html">
-                    <div class="tagstory">Story</div>
-                    <img class="storyimage" src="img/clips.png"/>
-                    <div class="storytitle">Gameplay Clips</div>
-                    <div class="storyhighlights">
-                        <div class="highlight misc">Video Collection</div>
-                    </div>
-                    <div class="storydesc">This page contains a large collection of clips recorded by RushRev players, if you'd like to see some more gameplay.</div>
-                </a>
--->
-            </div>
-        </div>
-        <div class = "contact" id = "contact">
-            <div class="sectionBar">
-            <div class = "sectionHeading">Contact</div>
-            
-            <div class = "centerbody">
-				<br/><br/><br/><br/><br/><br/>
-                Shoot me a mail at <a href = "mailto: jakobquaade@gmail.com" style="color:#00BBFF;text-decoration: underline;">jakobquaade@gmail.com</a>!
-            </div>
-            </div>
-        </div>
+    <div class="hero-content">
+      <div class="hero-tag">Available for work</div>
+      <h1>Jakob<br /><span>Quaade</span></h1>
+      <p>Game Designer & Programmer with 10+ years building combat systems, levels, and gameplay mechanics — from indie titles to AAA studios.</p>
+      <div class="hero-actions">
+        <a href="#work" class="btn btn-primary">View My Work</a>
+        <a href="resume.pdf" class="btn btn-secondary" target="_blank" rel="noopener">Download CV</a>
+      </div>
     </div>
-        <div class = "copyright">
-            <div class = "centerbody">
-                Copyright © 2023 by Jakob Quaade
-            </div>
+
+    <div class="scroll-hint">
+      <div class="scroll-hint-line"></div>
+    </div>
+  </div>
+
+  <hr class="full-divider" />
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="section-label">About</div>
+    <div class="about-grid">
+      <div class="about-text fade-up">
+        <h2 class="section-title">Designing games<br />from the ground up</h2>
+        <p>
+          I'm a <strong>multidisciplinary game designer and programmer</strong> based in Copenhagen, Denmark. My work spans combat design, player progression, level design, and tool development — with a deep focus on what makes gameplay <strong>feel right</strong>.
+        </p>
+        <p>
+          Over the past decade I've shipped content across the full production pipeline — from initial concept and blockout through to final release. I've worked in indie studios, contributed to AAA projects, and spent years honing experimental mechanics independently.
+        </p>
+        <p>
+          My primary engine is <strong>Unity</strong> with C#, though I'm also proficient in Unreal Engine. I care about craft, iteration, and the player experience above all else.
+        </p>
+        <a href="resume.pdf" class="btn btn-secondary" style="margin-top:0.5rem; width:fit-content" target="_blank" rel="noopener">Full Resume ↗</a>
+      </div>
+      <div class="about-stats fade-up">
+        <div class="stat-card">
+          <div class="stat-number">10+</div>
+          <div class="stat-label">Years of Experience</div>
         </div>
-    
-    <script type="text/javascript" src="./maintainscroll.js"></script>
+        <div class="stat-card">
+          <div class="stat-number">AAA</div>
+          <div class="stat-label">Studio Contractor</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">C#</div>
+          <div class="stat-label">Primary Language</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">360°</div>
+          <div class="stat-label">Full-Pipeline Dev</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="full-divider" />
+
+  <!-- SKILLS -->
+  <section id="skills" class="skills-full">
+    <div class="section-label">Expertise</div>
+    <h2 class="section-title fade-up">Skills & Tools</h2>
+    <p class="section-subtitle fade-up">A broad toolkit built across a decade of shipping games in varied roles.</p>
+    <div class="skills-grid">
+      <div class="skill-category fade-up">
+        <div class="skill-cat-label">Game Design</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Combat Design</span>
+          <span class="skill-tag">Player Progression</span>
+          <span class="skill-tag">Balance</span>
+          <span class="skill-tag">Gameplay Systems</span>
+          <span class="skill-tag">Tool Development</span>
+        </div>
+      </div>
+      <div class="skill-category fade-up">
+        <div class="skill-cat-label">Level Design</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Blockout</span>
+          <span class="skill-tag">Kitbashing</span>
+          <span class="skill-tag">Lighting</span>
+          <span class="skill-tag">Spatial Design</span>
+        </div>
+      </div>
+      <div class="skill-category fade-up">
+        <div class="skill-cat-label">Programming</div>
+        <div class="skill-tags">
+          <span class="skill-tag">C#</span>
+          <span class="skill-tag">Unity Scripting</span>
+          <span class="skill-tag">Game Systems</span>
+          <span class="skill-tag">Editor Tooling</span>
+        </div>
+      </div>
+      <div class="skill-category fade-up">
+        <div class="skill-cat-label">Engines & Tools</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Unity Engine</span>
+          <span class="skill-tag">Unreal Engine</span>
+          <span class="skill-tag">Visual Studio</span>
+          <span class="skill-tag">Git</span>
+          <span class="skill-tag">Jira</span>
+          <span class="skill-tag">Notion</span>
+        </div>
+      </div>
+      <div class="skill-category fade-up">
+        <div class="skill-cat-label">Production &amp; Art Support</div>
+        <div class="skill-tags">
+          <span class="skill-tag">VFX</span>
+          <span class="skill-tag">Sound Design</span>
+          <span class="skill-tag">Animation</span>
+          <span class="skill-tag">UI Implementation</span>
+          <span class="skill-tag">GIMP</span>
+          <span class="skill-tag">Audacity</span>
+        </div>
+      </div>
+      <div class="skill-category fade-up">
+        <div class="skill-cat-label">Other</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Game Maker</span>
+          <span class="skill-tag">Excel</span>
+          <span class="skill-tag">Paint.net</span>
+          <span class="skill-tag">Playtesting</span>
+          <span class="skill-tag">Prototyping</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="full-divider" />
+
+  <!-- EXPERIENCE -->
+  <section id="experience">
+    <div class="section-label">Career</div>
+    <h2 class="section-title fade-up">Experience</h2>
+    <p class="section-subtitle fade-up">From indie development to AAA studios — a consistent track record of shipping quality work.</p>
+
+    <div class="experience-list">
+
+      <div class="exp-item fade-up">
+        <div class="exp-meta">
+          <div class="exp-date">Apr 2025 – Dec 2025</div>
+          <div class="exp-company">Rockstar Games</div>
+        </div>
+        <div class="exp-content">
+          <div class="exp-role">Contractor — Game Design, Programming & Tooling</div>
+          <div class="exp-type">AAA · Contract</div>
+          <div class="exp-nda">🔒 Project under strict NDA</div>
+        </div>
+      </div>
+
+      <div class="exp-item fade-up">
+        <div class="exp-meta">
+          <div class="exp-date">Sep 2020 – 2024</div>
+          <div class="exp-company">Vortex Games</div>
+        </div>
+        <div class="exp-content">
+          <div class="exp-role">Rushdown Revolt — Game Design, Programming & Level Design</div>
+          <div class="exp-type">Indie · Unity 3D</div>
+          <ul class="exp-bullets">
+            <li>Worked with interdisciplinary teams to produce content updates including new characters, systems, game modes, and levels.</li>
+            <li>Designed and implemented core combat mechanics and ongoing balance updates in response to player feedback.</li>
+            <li>Implemented levels from ideation to blockout and final lighting, including kitbashed environments built with no art budget.</li>
+            <li>Spot contributions across VFX, sound design, animation, and UI implementation.</li>
+            <li>Designed and shipped new characters and levels using existing asset pipelines.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="exp-item fade-up">
+        <div class="exp-meta">
+          <div class="exp-date">Jan 2016 – Sep 2020</div>
+          <div class="exp-company">Independent</div>
+        </div>
+        <div class="exp-content">
+          <div class="exp-role">Independent Game Developer</div>
+          <div class="exp-type">Solo · Unity</div>
+          <ul class="exp-bullets">
+            <li>Developed experimental games independently in Unity, exploring systems design and gameplay feel.</li>
+            <li>Maintained a steady development practice alongside other employment.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="exp-item fade-up">
+        <div class="exp-meta">
+          <div class="exp-date">Sep 2015 – Dec 2015</div>
+          <div class="exp-company">Press Play</div>
+        </div>
+        <div class="exp-content">
+          <div class="exp-role">Game Design Intern</div>
+          <div class="exp-type">Studio · Internship</div>
+          <ul class="exp-bullets">
+            <li>Contributed to level design, playtesting, and ideation on an unnamed prototype with the game design team.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="exp-item fade-up">
+        <div class="exp-meta">
+          <div class="exp-date">2013 – 2016</div>
+          <div class="exp-company">Dania Academy</div>
+        </div>
+        <div class="exp-content">
+          <div class="exp-role">AP Computer Science — Game Specialisation</div>
+          <div class="exp-type">Education</div>
+          <ul class="exp-bullets">
+            <li>AP Datamatiker with a game development specialisation (Spil specialisering).</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="full-divider" />
+
+  <!-- WORK / VIDEO -->
+  <section id="work" class="showcase">
+    <div class="section-label">Work</div>
+    <h2 class="section-title fade-up">Gameplay Reel</h2>
+    <p class="section-subtitle fade-up">A showcase of game design, mechanics, and level work.</p>
+    <div class="video-container fade-up">
+      <iframe
+        src="https://www.youtube.com/embed/_2VK3VQHNzo?rel=0&modestbranding=1"
+        title="Jakob Quaade — Gameplay Reel"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+    <p class="video-caption fade-up">Rushdown Revolt — Game Design &amp; Level Design · Vortex Games</p>
+  </section>
+
+  <hr class="full-divider" />
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="section-label">Contact</div>
+    <div class="contact-grid">
+      <div class="fade-up">
+        <h2 class="section-title">Let's work<br />together</h2>
+        <p class="section-subtitle" style="margin-bottom:2rem">
+          Open to new opportunities — contract, full-time, or collaborative projects. Reach out and let's talk.
+        </p>
+        <div class="contact-links">
+          <a href="mailto:jakobquaade@gmail.com" class="contact-link">
+            <div class="contact-link-icon">✉</div>
+            <div class="contact-detail">
+              <small>Email</small>
+              jakobquaade@gmail.com
+            </div>
+          </a>
+          <a href="tel:+4526818805" class="contact-link">
+            <div class="contact-link-icon">☎</div>
+            <div class="contact-detail">
+              <small>Phone</small>
+              (+45) 26 81 88 05
+            </div>
+          </a>
+          <a href="resume.pdf" class="contact-link" target="_blank" rel="noopener">
+            <div class="contact-link-icon">↗</div>
+            <div class="contact-detail">
+              <small>Resume</small>
+              Download PDF
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <form class="contact-form fade-up" onsubmit="handleSubmit(event)">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" placeholder="Your name" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="your@email.com" required />
+        </div>
+        <div class="form-group">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" placeholder="Tell me about your project..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send Message</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <hr class="full-divider" />
+  <footer>
+    <p>© 2025 <span>Jakob Quaade</span> — Game Designer & Programmer</p>
+    <div class="footer-links">
+      <a href="mailto:jakobquaade@gmail.com">Email</a>
+      <a href="resume.pdf" target="_blank" rel="noopener">Resume</a>
+    </div>
+  </footer>
+
+  <script>
+    // Nav scroll effect
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
+    // Scroll-triggered fade-in
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 80);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    // Contact form handler
+    function handleSubmit(e) {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      const name = e.target.name.value;
+      const email = e.target.email.value;
+      const message = e.target.message.value;
+      const subject = encodeURIComponent(`Portfolio inquiry from ${name}`);
+      const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
+      window.location.href = `mailto:jakobquaade@gmail.com?subject=${subject}&body=${body}`;
+      btn.textContent = 'Opening mail client...';
+      setTimeout(() => { btn.textContent = 'Send Message'; }, 3000);
+    }
+  </script>
 </body>
 </html>
