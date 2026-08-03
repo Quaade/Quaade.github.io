@@ -699,13 +699,13 @@
       <div class="about-text fade-up">
         <h2 class="section-title">Designing games<br />from the ground up</h2>
         <p>
-          I'm a <strong>multidisciplinary game designer and programmer</strong> based in Copenhagen, Denmark. My work spans combat design, player progression, level design, and tool development — with a deep focus on what makes gameplay <strong>feel right</strong>.
+          I'm a <strong>game designer who implements his own systems</strong>, based in Copenhagen, Denmark. I specialise in melee combat and character mechanics — frame data, hitboxes, cancel windows, state machines — and the <strong>designer-facing tooling</strong> that turns balance into a fast iteration loop instead of a rebuild.
         </p>
         <p>
-          Over the past decade I've shipped content across the full production pipeline — from initial concept and blockout through to final release. I've worked in indie studios, contributed to AAA projects, and spent years honing experimental mechanics independently.
+          I've shipped <strong>thirteen playable characters</strong> on a live competitive fighting game and written the C# underneath them. Over the past decade I've worked across the full production pipeline, from concept and blockout through to live patches, in indie studios, on AAA projects, and independently.
         </p>
         <p>
-          My primary engine is <strong>Unity</strong> with C#, though I'm also proficient in Unreal Engine. I care about craft, iteration, and the player experience above all else.
+          My primary engine is <strong>Unity</strong> with C#, and I currently build in <strong>Godot</strong>; I'm also proficient in Unreal. I care about craft, iteration, and how the game feels in the hands above all else.
         </p>
         <a href="resume.pdf" class="btn btn-secondary" style="margin-top:0.5rem; width:fit-content" target="_blank" rel="noopener">Full Resume ↗</a>
       </div>
@@ -723,8 +723,8 @@
           <div class="stat-label">Primary Language</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number">360°</div>
-          <div class="stat-label">Full-Pipeline Dev</div>
+          <div class="stat-number">13</div>
+          <div class="stat-label">Characters Shipped</div>
         </div>
       </div>
     </div>
@@ -760,8 +760,11 @@
         <div class="skill-cat-label">Programming</div>
         <div class="skill-tags">
           <span class="skill-tag">C#</span>
-          <span class="skill-tag">Unity Scripting</span>
-          <span class="skill-tag">Game Systems</span>
+          <span class="skill-tag">Gameplay Architecture</span>
+          <span class="skill-tag">State Machines</span>
+          <span class="skill-tag">NPC Behaviour &amp; AI</span>
+          <span class="skill-tag">Networked Gameplay</span>
+          <span class="skill-tag">Procedural Generation</span>
           <span class="skill-tag">Editor Tooling</span>
         </div>
       </div>
@@ -769,6 +772,7 @@
         <div class="skill-cat-label">Engines & Tools</div>
         <div class="skill-tags">
           <span class="skill-tag">Unity Engine</span>
+          <span class="skill-tag">Godot Engine</span>
           <span class="skill-tag">Unreal Engine</span>
           <span class="skill-tag">Visual Studio</span>
           <span class="skill-tag">Git</span>
@@ -791,11 +795,10 @@
       <div class="skill-category fade-up">
         <div class="skill-cat-label">Other</div>
         <div class="skill-tags">
-          <span class="skill-tag">Game Maker</span>
-          <span class="skill-tag">Spreadsheets</span>
-          <span class="skill-tag">Paint.net</span>
           <span class="skill-tag">Playtesting</span>
           <span class="skill-tag">Prototyping</span>
+          <span class="skill-tag">Balance Simulation</span>
+          <span class="skill-tag">Spreadsheets</span>
         </div>
       </div>
     </div>
@@ -813,30 +816,77 @@
 
       <div class="exp-item fade-up">
         <div class="exp-meta">
+          <div class="exp-date">Jan 2026 – Present</div>
+          <div class="exp-company">Independent</div>
+        </div>
+        <div class="exp-content">
+          <div class="exp-role">Gameplay Systems & Engine Work</div>
+          <div class="exp-type">Solo · C#</div>
+          <ul class="exp-bullets">
+            <li>Solo networked 3D action-combat project in C#: combat, movement and animation systems, including procedural generation of character movesets from an animation library.</li>
+            <li>Ported the project from Unity 6 (FishNet, Animancer) to Godot 4.7 mid-development, rebuilding the character controller, animation and networking layers.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="exp-item fade-up">
+        <div class="exp-meta">
           <div class="exp-date">Apr 2025 – Dec 2025</div>
           <div class="exp-company">Rockstar Games</div>
         </div>
         <div class="exp-content">
           <div class="exp-role">Contractor — Game Design, Programming & Tooling</div>
           <div class="exp-type">AAA · Contract</div>
-          <div class="exp-nda">🔒 Project under strict NDA</div>
+          <ul class="exp-bullets">
+            <li>Worked on NPC behaviour and gameplay systems for an unannounced title as part of a large multi-discipline team.</li>
+            <li>Built and maintained internal tooling supporting design iteration on those systems.</li>
+            <li>Operated to AAA production standards: code review, large-scale source control, cross-discipline review.</li>
+          </ul>
+          <div class="exp-nda" style="margin-top:0.9rem">🔒 Project under strict NDA</div>
         </div>
       </div>
 
       <div class="exp-item fade-up">
         <div class="exp-meta">
-          <div class="exp-date">Sep 2020 – 2024</div>
+          <div class="exp-date">Feb 2025</div>
+          <div class="exp-company">Nordic Dice</div>
+        </div>
+        <div class="exp-content">
+          <div class="exp-role">Design & Development</div>
+          <div class="exp-type">Short-term</div>
+          <ul class="exp-bullets">
+            <li>Ideated, designed and built minigames for an online storefront, taking concepts from pitch through to working implementation.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="exp-item fade-up">
+        <div class="exp-meta">
+          <div class="exp-date">Jul 2024</div>
+          <div class="exp-company">Kasper Lapp</div>
+        </div>
+        <div class="exp-content">
+          <div class="exp-role">Design & Tools</div>
+          <div class="exp-type">Board Games · Magic Maze</div>
+          <ul class="exp-bullets">
+            <li>Built a gameplay simulation for balancing a card game in development, letting the designer evaluate rule and cost changes across large numbers of simulated matches.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="exp-item fade-up">
+        <div class="exp-meta">
+          <div class="exp-date">Sep 2020 – Sep 2023</div>
           <div class="exp-company">Vortex Games</div>
         </div>
         <div class="exp-content">
           <div class="exp-role">Rushdown Revolt — Game Design, Programming & Level Design</div>
           <div class="exp-type">Indie · Unity 3D</div>
           <ul class="exp-bullets">
-            <li>Worked with interdisciplinary teams to produce content updates including new characters, systems, game modes, and levels.</li>
-            <li>Designed and implemented core combat mechanics and ongoing balance updates in response to player feedback.</li>
-            <li>Implemented levels from ideation to blockout and final lighting, including kitbashed environments built with no art budget.</li>
-            <li>Spot contributions across VFX, sound design, animation, and UI implementation.</li>
-            <li>Designed and shipped new characters and levels using existing asset pipelines.</li>
+            <li>Designed and implemented <strong>13 playable characters</strong> for a live competitive platform fighter — 4 original (Seth, Velora, Reina, The Torment) and 9 full reworks — covering moveset design, frame data, hitboxes and the C# implementation of each.</li>
+            <li>Owned combat balance on a live build, driving reworks and mechanical changes from player feedback and competitive-scene input across an ongoing patch cadence.</li>
+            <li>Built levels and play areas from ideation through blockout and lighting, including stages assembled entirely from kitbashed assets with no art budget.</li>
+            <li>Worked across an interdisciplinary remote team; spot work on VFX, sound design, animation and UI implementation.</li>
           </ul>
         </div>
       </div>
@@ -914,6 +964,13 @@
               (+45) 26 81 88 05
             </div>
           </a>
+          <a href="https://www.linkedin.com/in/jakob-quaade-b23b35121/" class="contact-link" target="_blank" rel="noopener">
+            <div class="contact-link-icon">in</div>
+            <div class="contact-detail">
+              <small>LinkedIn</small>
+              Jakob Quaade
+            </div>
+          </a>
           <a href="resume.pdf" class="contact-link" target="_blank" rel="noopener">
             <div class="contact-link-icon">↗</div>
             <div class="contact-detail">
@@ -945,9 +1002,10 @@
   <!-- FOOTER -->
   <hr class="full-divider" />
   <footer>
-    <p>© 2025 <span>Jakob Quaade</span> - Game Designer & Programmer</p>
+    <p>© 2026 <span>Jakob Quaade</span> - Game Designer & Programmer</p>
     <div class="footer-links">
       <a href="mailto:jakobquaade@gmail.com">Email</a>
+      <a href="https://www.linkedin.com/in/jakob-quaade-b23b35121/" target="_blank" rel="noopener">LinkedIn</a>
       <a href="resume.pdf" target="_blank" rel="noopener">Resume</a>
     </div>
   </footer>
