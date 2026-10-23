@@ -969,7 +969,7 @@ const BUILTINS = BUILTIN_SRC.map(([name, meals, category, cuisine, servings, tag
    State
    ===================================================================== */
 const DEFAULT_SETTINGS = {
-  people: 2, kcal: 2000, protein: 0, fibre: 30, theme: 'auto', hideStaples: true, hideChecked: false,
+  people: 2, kcal: 2000, protein: 0, fibre: 30, baseline: true, theme: 'auto', hideStaples: true, hideChecked: false,
   staples: ['water', 'salt', 'pepper', 'black pepper', 'ground black pepper', 'freshly ground black pepper', 'salt and pepper', 'sea salt', 'ice'].join('\n'),
   proxies: ['https://api.allorigins.win/raw?url={url}', 'https://corsproxy.io/?url={url}', 'https://api.codetabs.com/v1/proxy/?quest={rawurl}'].join('\n'),
   onlineTried: false,
@@ -1055,6 +1055,17 @@ function nutr(r) {
   return n;
 }
 
+// Stand-in for an empty slot: a typical home-made meal, per person.
+const BASE_MEAL = {
+  breakfast: {kcal: 400, p: 15, c: 55, f: 13, fb: 5, veg: 80, sug: 10},
+  lunch: {kcal: 550, p: 25, c: 60, f: 20, fb: 7, veg: 120, sug: 5},
+  dinner: {kcal: 650, p: 32, c: 65, f: 25, fb: 8, veg: 150, sug: 4}
+};
+// Eating out: richer and lighter on veg than an average home meal
+function baseMeal(m, out) {
+  const b = BASE_MEAL[m];
+  return out ? {kcal: b.kcal * 1.3, p: b.p * 1.1, c: b.c * 1.2, f: b.f * 1.5, fb: b.fb * 0.8, veg: b.veg * 0.7, sug: b.sug * 1.5} : b;
+}
 function targets() {
   const st = S.settings;
   return {kcal: +st.kcal || 2000, protein: +st.protein || Math.round((+st.kcal || 2000) * 0.15 / 4), fibre: +st.fibre || 30, veg: 400, sugar: 30, fatLo: 20, fatHi: 35, fish: 2, redMax: 500, legume: 2, wgrain: 7};
@@ -1169,12 +1180,20 @@ function scoreWeek(week, ctx) {
   let fish = 0, redg = 0, legume = 0, wgrain = 0, lowcov = 0, odd = 0, favs = 0, lefts = 0, badLeft = 0, jit = 0;
   const cooked = new Map();
   for (let i = 0; i < 21; i++) {
-    const s = week[i]; if (!s) continue;
-    let r = s.r;
-    if (s.left) {
+    const s = week[i];
+    let r = s && s.r;
+    if (s && s.left) {
       const src = week[i - 2];
-      if (!src || src.left || src.fixedLeft || !leftoverFriendly(src.r)) { badLeft++; continue; }
-      r = src.r; lefts++;
+      if (!src || src.left || src.fixedLeft || !leftoverFriendly(src.r)) { badLeft++; r = null; }
+      else { r = src.r; lefts++; }
+    }
+    if (!r) {
+      // empty slot: count an average meal so the planned meals are judged against the whole day
+      if (ctx.baseline) {
+        const m = MEALS[i % 3], b = baseMeal(m, ctx.out.has(i));
+        share += MEAL_SHARE[m]; kcal += b.kcal; p += b.p; c += b.c; f += b.f; fb += b.fb; veg += b.veg; sug += b.sug;
+      }
+      continue;
     }
     const m = MEALS[i % 3], n = nutr(r);
     share += MEAL_SHARE[m]; planned++; if (m !== 'breakfast') ld++;
@@ -1192,7 +1211,7 @@ function scoreWeek(week, ctx) {
   }
   let score = jit;
   if (o.balanced && share) {
-    // targets are scaled to the share of the day the planned meals cover
+    // targets are scaled to the share of the day covered (all of it when empty slots count as average meals)
     const short = (v, t) => { const x = v / (t * share); return x < 1 ? (1 - x) ** 2 : 0; };
     score -= 8 * short(fb, T.fibre) + 6 * short(p, T.protein) + 6 * short(veg, T.veg);
     const dev = Math.abs(kcal / (T.kcal * 0.88 * share) - 1);
@@ -1235,17 +1254,18 @@ function scoreWeek(week, ctx) {
 }
 function planSlots(vars, exclude) {
   const wk = S.week, o = S.settings.rnd, mode = o.leftovers || 'some';
-  const week = Array(21).fill(null), varIdx = new Set(vars.map(v => v.i));
+  const week = Array(21).fill(null), varIdx = new Set(vars.map(v => v.i)), out = new Set();
   eachSlot((d, m) => {
     const i = d * 3 + MEALS.indexOf(m);
     if (varIdx.has(i)) return;
     const s = getSlot(wk, d, m), r = slotRecipe(s);
     if (r) week[i] = s.leftover ? {r, fixedLeft: true} : {r};
+    else if (s && s.id === '__out') out.add(i);
   });
   const recent = new Set();  // recipes planned last week get a nudge away, so weeks don't repeat
   const prev = S.plan[shiftWeek(wk, -1)] || {};
   Object.values(prev).forEach(day => Object.values(day || {}).forEach(sl => sl && sl.id && recent.add(sl.id)));
-  const ctx = {T: targets(), useUp: useUpTerms(), leftMode: mode, jit: new Map(), recent};
+  const ctx = {T: targets(), useUp: useUpTerms(), leftMode: mode, jit: new Map(), recent, baseline: !!S.settings.baseline, out};
   const pools = {};
   vars.forEach(v => { if (!v.leftOnly && !pools[v.m]) pools[v.m] = poolFor(v.m); });
   const canLeft = v => mode !== 'off' && v.m === 'lunch' && v.d > 0;
@@ -2026,30 +2046,44 @@ function shoppingText() {
 
 /* ---------- Nutrition ---------- */
 function weekStats(wk) {
-  const T = targets();
+  const T = targets(), useBase = !!S.settings.baseline, K = ['kcal', 'p', 'c', 'f', 'fb', 'veg', 'sug'];
   const days = [], meals = [];
+  let assumed = 0;
   for (let d = 0; d < 7; d++) {
-    const day = {d, kcal: 0, p: 0, c: 0, f: 0, fb: 0, veg: 0, sug: 0, count: 0};
+    const day = {d, count: 0, assumed: 0, akcal: 0, pp: 0, pc: 0, pf: 0};
+    K.forEach(k => { day[k] = 0; });
     for (const m of MEALS) {
-      const sl = getSlot(wk, d, m), r = slotRecipe(sl); if (!r) continue;
-      const n = nutr(r); meals.push({d, m, r, n, left: !!sl.leftover});
-      for (const k of ['kcal', 'p', 'c', 'f', 'fb', 'veg', 'sug']) day[k] += n[k];
-      day.count++;
+      const sl = getSlot(wk, d, m), r = slotRecipe(sl);
+      if (r) {
+        const n = nutr(r); meals.push({d, m, r, n, left: !!sl.leftover});
+        K.forEach(k => { day[k] += n[k]; });
+        day.pp += n.p; day.pc += n.c; day.pf += n.f; day.count++;
+      } else if (useBase) {
+        const bm = baseMeal(m, sl && sl.id === '__out');
+        K.forEach(k => { day[k] += bm[k]; });
+        day.akcal += bm.kcal; day.assumed++; assumed++;
+      }
     }
     days.push(day);
   }
-  const act = days.filter(x => x.count);
+  // with average meals filling the gaps every day counts; otherwise only days with something planned
+  const act = useBase && meals.length ? days : days.filter(x => x.count);
   const avg = {};
-  for (const k of ['kcal', 'p', 'c', 'f', 'fb', 'veg', 'sug']) avg[k] = act.length ? act.reduce((s, x) => s + x[k], 0) / act.length : 0;
+  for (const k of K) avg[k] = act.length ? act.reduce((s, x) => s + x[k], 0) / act.length : 0;
   const macroK = avg.p * 4 + avg.c * 4 + avg.f * 9 || 1;
   const pct = {p: avg.p * 4 / macroK * 100, c: avg.c * 4 / macroK * 100, f: avg.f * 9 / macroK * 100};
-  const scale = act.length ? 7 / act.length : 1;
+  const ld = meals.filter(x => x.m !== 'breakfast').length;
+  const scale = useBase ? 1 : act.length ? 7 / act.length : 1;
   const c = {
     fish: meals.filter(x => x.n.fish).length, red: meals.filter(x => x.n.red || x.n.proc).length, proc: meals.filter(x => x.n.proc).length,
     redg: meals.reduce((s, x) => s + x.n.redg, 0) * scale, legume: meals.filter(x => x.n.legume).length, wgrain: meals.filter(x => x.n.wgrain).length,
     veg: meals.filter(x => x.n.vegetarian).length, unique: new Set(meals.map(x => x.r.id)).size, planned: meals.length,
     lowcov: meals.filter(x => x.n.coverage < 0.6).length
   };
+  // weekly food-group goals; with average meals they scale to the lunches/dinners you actually plan
+  const G = useBase
+    ? {fish: Math.min(2, Math.ceil(ld / 5)), legume: Math.min(2, Math.ceil(ld / 5)), wgrain: Math.max(1, Math.min(5, Math.round(meals.length * 5 / 21))), red: Math.round(T.redMax * Math.min(1, ld / 10))}
+    : {fish: 2, legume: 2, wgrain: 5, red: T.redMax};
   // scoring
   const checks = [];
   const add = (key, ok, warn) => checks.push({key, s: ok ? 1 : warn ? 0.5 : 0});
@@ -2058,13 +2092,13 @@ function weekStats(wk) {
   add('veg', avg.veg >= T.veg * 0.9, avg.veg >= T.veg * 0.55);
   add('fat', pct.f <= T.fatHi && pct.f >= T.fatLo, pct.f <= T.fatHi + 7);
   add('sugar', avg.sug <= T.sugar, avg.sug <= T.sugar * 1.6);
-  add('fish', c.fish >= 2, c.fish >= 1);
-  add('red', c.redg <= T.redMax, c.redg <= T.redMax * 1.5);
-  add('legume', c.legume >= 2, c.legume >= 1);
-  add('wgrain', c.wgrain >= 5, c.wgrain >= 2);
+  add('fish', c.fish >= G.fish, c.fish >= G.fish - 1);
+  add('red', c.redg <= G.red, c.redg <= G.red * 1.5);
+  add('legume', c.legume >= G.legume, c.legume >= G.legume - 1);
+  add('wgrain', c.wgrain >= G.wgrain, c.wgrain >= Math.ceil(G.wgrain / 2));
   const score = checks.reduce((s, x) => s + x.s, 0) / checks.length;
   const grade = !meals.length ? '–' : score >= 0.9 ? 'A' : score >= 0.75 ? 'B' : score >= 0.6 ? 'C' : score >= 0.45 ? 'D' : 'E';
-  return {T, days, meals, active: act.length, avg, pct, c, score, grade};
+  return {T, G, useBase, assumed, days, meals, active: act.length, avg, pct, c, score, grade};
 }
 function status(level) {
   const map = {good: ['st-good', '✓', 'On track'], low: ['st-warn', '▼', 'Low'], vlow: ['st-crit', '▼', 'Very low'], high: ['st-serious', '▲', 'High'], vhigh: ['st-crit', '▲', 'Too high'], na: ['st-na', '–', 'No data']};
@@ -2080,7 +2114,10 @@ function tile(label, val, unit, targetText, frac, targetFrac, level) {
 function lvlMin(v, t) { return v >= t * 0.9 ? 'good' : v >= t * 0.6 ? 'low' : 'vlow'; }
 function lvlMax(v, t) { return v <= t ? 'good' : v <= t * 1.5 ? 'high' : 'vhigh'; }
 function suggestions(metric, mealTypes, wk, k = 4) {
-  const inWeek = new Set(); eachSlot((d, m) => { const s = getSlot(wk, d, m); if (s) inWeek.add(s.id); });
+  const inWeek = new Set(), plannedTypes = new Set();
+  eachSlot((d, m) => { const s = getSlot(wk, d, m); if (s) { inWeek.add(s.id); if (slotRecipe(s)) plannedTypes.add(m); } });
+  // when empty slots count as average meals, only suggest for the meal types you actually plan
+  if (S.settings.baseline && plannedTypes.size) { const t = mealTypes.filter(m => plannedTypes.has(m)); mealTypes = t.length ? t : [...plannedTypes]; }
   const f = {
     fibre: n => n.fb, protein: n => n.p, veg: n => n.veg, fish: n => n.fish ? 1 + n.veg / 500 : -1, legume: n => n.legume ? n.fb : -1,
     wgrain: n => n.wgrain ? n.fb : -1, lowred: n => n.vegetarian ? n.p + n.fb : -1, lowfat: n => n.kcal ? -n.f * 9 / n.kcal + n.p / 100 : -1, lowsugar: n => n.sug < 8 ? n.fb : -1
@@ -2100,16 +2137,19 @@ function swapIdea(st, metric, label, unit) {
 }
 function suggChips(list) { return list.length ? `<div class="sugg">${list.map(r => `<button data-act="open" data-id="${esc(r.id)}">${esc(r.emoji || '')} ${esc(r.name)}</button>`).join('')}</div>` : ''; }
 function renderNutrition() {
-  const st = weekStats(S.week), T = st.T, a = st.avg, c = st.c;
+  const st = weekStats(S.week), T = st.T, G = st.G, a = st.avg, c = st.c;
+  const withBase = st.useBase && st.assumed;
+  const mealsSrc = withBase ? 'Your planned meals plus average meals for the empty slots' : 'Your planned meals';
   if (!st.meals.length) {
     app.innerHTML = `${weekBar()}<div class="empty-state panel">Nothing planned this week yet — add some meals and a nutrition report appears here.<br><br><button class="btn primary" data-act="tab" data-tab="plan">Go to the planner</button></div>`;
     return;
   }
   const recs = [], goods = [];
   const kcalShare = a.kcal / T.kcal;
-  if (st.c.planned < 21) recs.push({lvl: 'na', title: `${21 - st.c.planned} meal slot${21 - st.c.planned === 1 ? '' : 's'} still empty`, text: `Daily figures are averaged over the ${st.active} day${st.active === 1 ? '' : 's'} with at least one meal, so empty slots make days look lighter than they will be. Fill them (🎲 Fill empty slots) for a complete picture.`});
-  if (kcalShare < 0.7) recs.push({lvl: 'low', title: 'Meals look light on energy', text: `Your planned meals average ${fmtInt(a.kcal)} kcal a day against a ${fmtInt(T.kcal)} kcal target. Snacks usually supply 10–20% of intake, but this gap is larger — consider bigger portions, adding a side (bread, rice, potatoes), or a more substantial breakfast.`});
-  else if (kcalShare > 1.05) recs.push({lvl: 'high', title: 'Meals alone exceed your energy target', text: `Meals average ${fmtInt(a.kcal)} kcal a day, above your ${fmtInt(T.kcal)} kcal target before any snacks or drinks. Lighter lunches, smaller portions of the richest dinners, or more vegetable-heavy dishes would bring this down.`, sugg: suggestions('lowfat', ['lunch', 'dinner'], S.week)});
+  if (withBase) recs.push({lvl: 'na', title: `${st.assumed} empty slot${st.assumed === 1 ? '' : 's'} counted as average meals`, text: `Empty slots are assumed to be a typical meal — breakfast ≈ ${BASE_MEAL.breakfast.kcal} kcal with ${BASE_MEAL.breakfast.fb} g fibre, lunch ≈ ${BASE_MEAL.lunch.kcal} kcal with ${BASE_MEAL.lunch.fb} g fibre, dinner ≈ ${BASE_MEAL.dinner.kcal} kcal with ${BASE_MEAL.dinner.fb} g fibre (eating out counts as a richer meal). Daily totals include them, so the advice below is about what your planned meals need to make up. Food-group goals (fish, beans, whole grains, red meat) are scaled to the ${c.planned} meal${c.planned === 1 ? '' : 's'} you've planned.`});
+  else if (st.c.planned < 21) recs.push({lvl: 'na', title: `${21 - st.c.planned} meal slot${21 - st.c.planned === 1 ? '' : 's'} still empty`, text: `Daily figures are averaged over the ${st.active} day${st.active === 1 ? '' : 's'} with at least one meal, so empty slots make days look lighter than they will be. Fill them, or turn on “Count empty slots as average meals” above.`});
+  if (kcalShare < 0.7) recs.push({lvl: 'low', title: 'Meals look light on energy', text: `${mealsSrc} average ${fmtInt(a.kcal)} kcal a day against a ${fmtInt(T.kcal)} kcal target. Snacks usually supply 10–20% of intake, but this gap is larger — consider bigger portions, adding a side (bread, rice, potatoes), or a more substantial breakfast.`});
+  else if (kcalShare > 1.05) recs.push({lvl: 'high', title: 'Meals alone exceed your energy target', text: `${mealsSrc} average ${fmtInt(a.kcal)} kcal a day, above your ${fmtInt(T.kcal)} kcal target before any snacks or drinks. Lighter lunches, smaller portions of the richest dinners, or more vegetable-heavy dishes would bring this down.`, sugg: suggestions('lowfat', ['lunch', 'dinner'], S.week)});
   else goods.push(`Energy is in a sensible range (${fmtInt(a.kcal)} kcal/day from meals, leaving room for snacks).`);
   if (a.fb < T.fibre * 0.9) recs.push({lvl: a.fb < T.fibre * 0.6 ? 'vlow' : 'low', title: 'Fibre is below target', text: `You're averaging ${Math.round(a.fb)} g of fibre a day against the ${T.fibre} g most adults need. Fibre supports digestion, blood sugar and heart health. Easy wins: swap white rice/pasta/bread for whole-grain versions, add a tin of beans or lentils to a stew or salad, and start the day with oats.`, sugg: suggestions('fibre', ['breakfast', 'lunch', 'dinner'], S.week), swap: swapIdea(st, 'fibre', 'fibre', 'g')});
   else goods.push(`Plenty of fibre (${Math.round(a.fb)} g/day).`);
@@ -2117,13 +2157,13 @@ function renderNutrition() {
   else goods.push(`Protein target met (${Math.round(a.p)} g/day).`);
   if (a.veg < T.veg * 0.9) recs.push({lvl: a.veg < T.veg * 0.55 ? 'vlow' : 'low', title: 'More fruit and vegetables needed', text: `Meals contain roughly ${Math.round(a.veg)} g of fruit and veg a day — the guideline is at least ${T.veg} g (five 80 g portions). Add a side salad or steamed greens to dinners, fruit to breakfast, and extra veg to sauces and soups.`, sugg: suggestions('veg', ['lunch', 'dinner'], S.week), swap: swapIdea(st, 'veg', 'fruit & veg', 'g')});
   else goods.push(`Good fruit & veg intake (${Math.round(a.veg)} g/day).`);
-  if (c.fish < 2) recs.push({lvl: c.fish === 0 ? 'vlow' : 'low', title: `Only ${c.fish} fish meal${c.fish === 1 ? '' : 's'} this week`, text: 'Guidelines suggest two portions of fish a week, one of them oily (salmon, mackerel, sardines, trout) for omega-3 fats.', sugg: suggestions('fish', ['lunch', 'dinner'], S.week)});
-  else goods.push(`${c.fish} fish meals — meets the two-a-week guideline.`);
-  if (c.redg > T.redMax) recs.push({lvl: c.redg > T.redMax * 1.5 ? 'vhigh' : 'high', title: 'Red & processed meat is on the high side', text: `About ${Math.round(c.redg)} g per person this week across ${c.red} meal${c.red === 1 ? '' : 's'}${c.proc ? ` (${c.proc} with processed meat)` : ''}. Keeping red meat under ~350–500 g a week and processed meat to a minimum lowers bowel-cancer risk. Try swapping one or two for fish, poultry or a bean-based dish.`, sugg: suggestions('lowred', ['dinner'], S.week)});
+  if (c.fish < G.fish) recs.push({lvl: c.fish === 0 ? 'vlow' : 'low', title: `Only ${c.fish} fish meal${c.fish === 1 ? '' : 's'} this week`, text: 'Guidelines suggest two portions of fish a week, one of them oily (salmon, mackerel, sardines, trout) for omega-3 fats.', sugg: suggestions('fish', ['lunch', 'dinner'], S.week)});
+  else if (c.fish) goods.push(`${c.fish} fish meal${c.fish === 1 ? '' : 's'}${c.fish >= 2 ? ' — meets the two-a-week guideline' : ''}.`);
+  if (c.redg > G.red) recs.push({lvl: c.redg > G.red * 1.5 ? 'vhigh' : 'high', title: 'Red & processed meat is on the high side', text: `About ${Math.round(c.redg)} g per person this week across ${c.red} meal${c.red === 1 ? '' : 's'}${c.proc ? ` (${c.proc} with processed meat)` : ''}. Keeping red meat under ~350–500 g a week and processed meat to a minimum lowers bowel-cancer risk. Try swapping one or two for fish, poultry or a bean-based dish.`, sugg: suggestions('lowred', ['dinner'], S.week)});
   else if (c.red) goods.push(`Red meat kept moderate (${Math.round(c.redg)} g/person this week).`);
-  if (c.legume < 2) recs.push({lvl: 'low', title: 'Add beans, lentils or chickpeas', text: `Only ${c.legume} meal${c.legume === 1 ? '' : 's'} feature legumes. They're cheap, high in fibre and protein, and count towards your veg — aim for at least two or three meals a week.`, sugg: suggestions('legume', ['lunch', 'dinner'], S.week)});
+  if (c.legume < G.legume) recs.push({lvl: 'low', title: 'Add beans, lentils or chickpeas', text: `Only ${c.legume} meal${c.legume === 1 ? '' : 's'} feature legumes. They're cheap, high in fibre and protein, and count towards your veg — aim for at least two or three meals a week.`, sugg: suggestions('legume', ['lunch', 'dinner'], S.week)});
   else goods.push(`${c.legume} meals with beans, lentils or chickpeas.`);
-  if (c.wgrain < 5) recs.push({lvl: c.wgrain < 2 ? 'vlow' : 'low', title: 'Few whole grains', text: `${c.wgrain} meal${c.wgrain === 1 ? '' : 's'} contain whole grains. Oats, wholemeal bread, brown rice, quinoa or wholewheat pasta at least once a day help with fibre and keep you fuller for longer.`, sugg: suggestions('wgrain', ['breakfast', 'lunch', 'dinner'], S.week)});
+  if (c.wgrain < G.wgrain) recs.push({lvl: c.wgrain < Math.ceil(G.wgrain / 2) ? 'vlow' : 'low', title: 'Few whole grains', text: `${c.wgrain} planned meal${c.wgrain === 1 ? '' : 's'} contain whole grains (goal: ${G.wgrain}). Oats, wholemeal bread, brown rice, quinoa or wholewheat pasta at least once a day help with fibre and keep you fuller for longer.`, sugg: suggestions('wgrain', ['breakfast', 'lunch', 'dinner'], S.week)});
   else goods.push(`Whole grains in ${c.wgrain} meals.`);
   if (st.pct.f > T.fatHi) recs.push({lvl: st.pct.f > T.fatHi + 7 ? 'vhigh' : 'high', title: 'Fat makes up a large share of energy', text: `${Math.round(st.pct.f)}% of calories come from fat (guideline 20–35%). Swap cream for yogurt or crème fraîche, measure oil rather than pouring, and pick leaner cuts and lower-fat cheeses.`, sugg: suggestions('lowfat', ['lunch', 'dinner'], S.week)});
   else if (st.pct.f < T.fatLo) recs.push({lvl: 'low', title: 'Very low in fat', text: `Only ${Math.round(st.pct.f)}% of energy is from fat. Some healthy fats help you absorb vitamins A, D, E and K — add olive oil, nuts, seeds, avocado or oily fish.`});
@@ -2137,7 +2177,10 @@ function renderNutrition() {
   const intro = {A: 'An excellent, well-balanced week.', B: 'A solid week with a couple of things to tweak.', C: 'A reasonable base, but several areas could be improved.', D: 'This week is missing some important food groups.', E: 'This plan needs rebalancing — see the suggestions below.'}[st.grade] || '';
 
   app.innerHTML = `${weekBar()}
-  <p class="small muted" style="margin:-4px 0 14px">Per person, per day, from <b>${c.planned}</b> planned meal${c.planned === 1 ? '' : 's'} across ${st.active} day${st.active === 1 ? '' : 's'}. Snacks and drinks aren't included. Values are estimates from ingredient lists.</p>
+  <div class="row small muted" style="margin:-4px 0 14px;justify-content:space-between">
+    <span>Per person, per day, from <b>${c.planned}</b> planned meal${c.planned === 1 ? '' : 's'}${withBase ? ` + <b>${st.assumed}</b> average meal${st.assumed === 1 ? '' : 's'} for empty slots` : ` across ${st.active} day${st.active === 1 ? '' : 's'}`}. Snacks and drinks aren't included. Values are estimates.</span>
+    <label class="chk"><input type="checkbox" data-set="baseline" ${S.settings.baseline ? 'checked' : ''}> Count empty slots as average meals</label>
+  </div>
   <div class="tiles">
     ${tile('Energy', fmtInt(a.kcal), ' kcal', `target ${fmtInt(T.kcal)} (incl. snacks)`, a.kcal / (T.kcal * 1.25), 0.8, kcalShare < 0.7 ? 'low' : kcalShare > 1.05 ? 'high' : 'good')}
     ${tile('Protein', Math.round(a.p), ' g', `target ≥ ${T.protein} g`, a.p / (T.protein * 1.5), 1 / 1.5, lvlMin(a.p, T.protein))}
@@ -2157,16 +2200,16 @@ function renderNutrition() {
     <div style="display:grid;gap:14px">
       <section class="chart-box panel">
         <h3>Calories per day by macronutrient</h3>
-        <div class="legend"><span><i style="background:var(--s1)"></i>Protein</span><span><i style="background:var(--s2)"></i>Carbs</span><span><i style="background:var(--s3)"></i>Fat</span><span><i style="background:none;border-top:2px dashed var(--text-2);border-radius:0;height:0;width:14px"></i>Daily target</span></div>
+        <div class="legend"><span><i style="background:var(--s1)"></i>Protein</span><span><i style="background:var(--s2)"></i>Carbs</span><span><i style="background:var(--s3)"></i>Fat</span>${withBase ? '<span><i style="background:var(--muted);opacity:.45"></i>Average meal (empty slot)</span>' : ''}<span><i style="background:none;border-top:2px dashed var(--text-2);border-radius:0;height:0;width:14px"></i>Daily target</span></div>
         <div class="chart" id="chart"></div>
       </section>
       <section class="chart-box panel">
-        <h3>Food groups this week</h3>
+        <h3>Food groups this week${withBase ? ' <span class="small faint" style="font-weight:500">· goals scaled to planned meals</span>' : ''}</h3>
         <div class="counts">
-          <div class="count"><b>${c.fish} <span class="small faint">/ 2+</span></b><span>🐟 Fish meals</span></div>
-          <div class="count"><b>${Math.round(c.redg)} g <span class="small faint">/ ≤${T.redMax}</span></b><span>🥩 Red & processed meat per person</span></div>
-          <div class="count"><b>${c.legume} <span class="small faint">/ 2+</span></b><span>🥫 Legume meals</span></div>
-          <div class="count"><b>${c.wgrain} <span class="small faint">/ 5+</span></b><span>🌾 Whole-grain meals</span></div>
+          <div class="count"><b>${c.fish} <span class="small faint">/ ${G.fish}+</span></b><span>🐟 Fish meals</span></div>
+          <div class="count"><b>${Math.round(c.redg)} g <span class="small faint">/ ≤${G.red}</span></b><span>🥩 Red & processed meat per person</span></div>
+          <div class="count"><b>${c.legume} <span class="small faint">/ ${G.legume}+</span></b><span>🥫 Legume meals</span></div>
+          <div class="count"><b>${c.wgrain} <span class="small faint">/ ${G.wgrain}+</span></b><span>🌾 Whole-grain meals</span></div>
           <div class="count"><b>${c.veg}</b><span>🌱 Vegetarian meals</span></div>
           <div class="count"><b>${c.unique}</b><span>🍽️ Different recipes</span></div>
         </div>
@@ -2174,7 +2217,7 @@ function renderNutrition() {
       <section class="chart-box panel">
         <h3 style="margin-bottom:6px">Day by day</h3>
         <div class="table-wrap"><table class="data"><thead><tr><th>Day</th><th>Meals</th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Fibre</th><th>F&amp;V</th></tr></thead><tbody>
-        ${st.days.map(d => `<tr><td>${DAY_NAMES[d.d].slice(0, 3)}</td><td>${d.count}</td><td>${d.count ? fmtInt(d.kcal) : '–'}</td><td>${d.count ? Math.round(d.p) + ' g' : '–'}</td><td>${d.count ? Math.round(d.c) + ' g' : '–'}</td><td>${d.count ? Math.round(d.f) + ' g' : '–'}</td><td>${d.count ? Math.round(d.fb) + ' g' : '–'}</td><td>${d.count ? Math.round(d.veg) + ' g' : '–'}</td></tr>`).join('')}
+        ${st.days.map(d => { const any = d.count || d.assumed; return `<tr><td>${DAY_NAMES[d.d].slice(0, 3)}</td><td>${d.count}${d.assumed ? ` <span class="faint">+${d.assumed} avg</span>` : ''}</td><td>${any ? fmtInt(d.kcal) : '–'}</td><td>${any ? Math.round(d.p) + ' g' : '–'}</td><td>${any ? Math.round(d.c) + ' g' : '–'}</td><td>${any ? Math.round(d.f) + ' g' : '–'}</td><td>${any ? Math.round(d.fb) + ' g' : '–'}</td><td>${any ? Math.round(d.veg) + ' g' : '–'}</td></tr>`; }).join('')}
         </tbody></table></div>
       </section>
     </div>
@@ -2185,22 +2228,22 @@ function drawChart(st) {
   const el = $('#chart'); if (!el) return;
   const W = Math.max(280, el.clientWidth), H = 230, m = {l: 40, r: 8, t: 14, b: 26};
   const T = st.T.kcal;
-  const maxV = Math.max(T * 1.1, ...st.days.map(d => d.p * 4 + d.c * 4 + d.f * 9));
+  const maxV = Math.max(T * 1.1, ...st.days.map(d => d.pp * 4 + d.pc * 4 + d.pf * 9 + d.akcal));
   const step = maxV > 3000 ? 1000 : 500, top = Math.ceil(maxV / step) * step;
   const ih = H - m.t - m.b, iw = W - m.l - m.r, band = iw / 7, bw = Math.min(40, band * 0.56);
   const y = v => m.t + ih * (1 - v / top);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Stacked bar chart of daily calories from protein, carbs and fat">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Stacked bar chart of daily calories from protein, carbs and fat in planned meals, plus assumed average meals">`;
   for (let v = 0; v <= top; v += step) svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(${v === 0 ? '--axis' : '--grid'})" stroke-width="1"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)" style="font-variant-numeric:tabular-nums">${v ? (v / 1000) + 'k' : 0}</text>`;
   st.days.forEach((d, i) => {
     const cx = m.l + band * i + band / 2, x = cx - bw / 2;
-    const segs = [['p', d.p * 4, '--s1'], ['c', d.c * 4, '--s2'], ['f', d.f * 9, '--s3']].filter(s => s[1] > 0);
+    const segs = [['p', d.pp * 4, '--s1'], ['c', d.pc * 4, '--s2'], ['f', d.pf * 9, '--s3'], ['a', d.akcal, '--muted']].filter(s => s[1] > 0);
     let cum = 0;
     segs.forEach(([k, v, col], j) => {
       const y1 = y(cum + v), y0 = y(cum) - (j > 0 ? 2 : 0), h = Math.max(0, y0 - y1);
       if (j === segs.length - 1) {
         const r = Math.min(4, h, bw / 2);
-        svg += `<path d="M${x},${y0} V${y1 + r} Q${x},${y1} ${x + r},${y1} H${x + bw - r} Q${x + bw},${y1} ${x + bw},${y1 + r} V${y0} Z" fill="var(${col})"/>`;
-      } else svg += `<rect x="${x}" y="${y1}" width="${bw}" height="${h}" fill="var(${col})"/>`;
+        svg += `<path d="M${x},${y0} V${y1 + r} Q${x},${y1} ${x + r},${y1} H${x + bw - r} Q${x + bw},${y1} ${x + bw},${y1 + r} V${y0} Z" fill="var(${col})" ${k === 'a' ? 'fill-opacity=".45"' : ''}/>`;
+      } else svg += `<rect x="${x}" y="${y1}" width="${bw}" height="${h}" fill="var(${col})" ${k === 'a' ? 'fill-opacity=".45"' : ''}/>`;
       cum += v;
     });
     svg += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11.5" fill="var(--text-2)">${DAY_NAMES[i].slice(0, 3)}</text>`;
@@ -2214,7 +2257,7 @@ function drawChart(st) {
     const show = () => {
       const d = st.days[+h.dataset.i];
       const box = el.getBoundingClientRect(), hb = h.getBoundingClientRect();
-      tt.innerHTML = `<b>${DAY_NAMES[d.d]}</b>${d.count ? `<div class="tt-row"><span>Total</span><b>${fmtInt(d.kcal)} kcal</b></div><div class="tt-row"><span>Protein</span><span>${Math.round(d.p)} g · ${fmtInt(d.p * 4)} kcal</span></div><div class="tt-row"><span>Carbs</span><span>${Math.round(d.c)} g · ${fmtInt(d.c * 4)} kcal</span></div><div class="tt-row"><span>Fat</span><span>${Math.round(d.f)} g · ${fmtInt(d.f * 9)} kcal</span></div><div class="tt-row"><span>Meals</span><span>${d.count}/3</span></div>` : '<div class="faint">No meals planned</div>'}`;
+      tt.innerHTML = `<b>${DAY_NAMES[d.d]}</b>${d.count || d.assumed ? `<div class="tt-row"><span>Total</span><b>${fmtInt(d.kcal)} kcal</b></div>${d.count ? `<div class="tt-row"><span>Protein</span><span>${Math.round(d.pp)} g · ${fmtInt(d.pp * 4)} kcal</span></div><div class="tt-row"><span>Carbs</span><span>${Math.round(d.pc)} g · ${fmtInt(d.pc * 4)} kcal</span></div><div class="tt-row"><span>Fat</span><span>${Math.round(d.pf)} g · ${fmtInt(d.pf * 9)} kcal</span></div>` : ''}${d.assumed ? `<div class="tt-row"><span>${d.assumed} average meal${d.assumed === 1 ? '' : 's'}</span><span>${fmtInt(d.akcal)} kcal</span></div>` : ''}<div class="tt-row"><span>Planned</span><span>${d.count}/3</span></div>` : '<div class="faint">No meals planned</div>'}`;
       tt.classList.remove('hidden');
       const left = Math.min(Math.max(hb.left - box.left + hb.width / 2, 80), box.width - 80);
       tt.style.left = left + 'px'; tt.style.top = (m.t + 4) + 'px';
@@ -2238,6 +2281,7 @@ function renderSettings() {
         <label class="field"><span>Daily calorie target per person</span><input type="number" min="1000" max="5000" step="50" data-set="kcal" value="${esc(st.kcal)}"></label>
         <label class="field"><span>Protein target, g/day (blank = 15% of calories → ${T.protein} g)</span><input type="number" min="0" max="300" data-set="protein" value="${st.protein ? esc(st.protein) : ''}"></label>
         <label class="field"><span>Fibre target, g/day</span><input type="number" min="10" max="80" data-set="fibre" value="${esc(st.fibre)}"></label>
+        <label class="chk" style="grid-column:1/-1;align-items:flex-start"><input type="checkbox" data-set="baseline" ${st.baseline ? 'checked' : ''}> <span>Count empty meal slots as an average meal in the nutrition report and smart randomizer <span class="faint">(breakfast ≈ ${BASE_MEAL.breakfast.kcal} kcal, lunch ≈ ${BASE_MEAL.lunch.kcal}, dinner ≈ ${BASE_MEAL.dinner.kcal})</span></span></label>
         <label class="field"><span>Theme</span><select data-set="theme"><option value="auto">Match system</option><option value="light" ${st.theme === 'light' ? 'selected' : ''}>Light</option><option value="dark" ${st.theme === 'dark' ? 'selected' : ''}>Dark</option></select></label>
       </div>
     </section>
