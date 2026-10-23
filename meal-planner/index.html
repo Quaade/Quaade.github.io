@@ -260,7 +260,13 @@ table.data th{font-size:11.5px;color:var(--muted);font-weight:650;text-transform
 .table-wrap{overflow-x:auto}
 .report{padding:16px 18px}
 .grade{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-.grade-letter{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:30px;font-weight:800;background:var(--surface-3)}
+.grade-letter{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:30px;font-weight:800;background:var(--surface-3);color:#141414;letter-spacing:-.03em;flex:none}
+/* tier-list colours (same in light and dark mode; ink stays dark on the pastel) */
+.tier{background:var(--surface-3)}
+.tier-Splus{background:linear-gradient(135deg,#ffd86b 0%,#ff9ad5 50%,#9ad0ff 100%);box-shadow:0 0 0 2px #ffd86b,0 4px 14px rgba(255,170,90,.45)}
+.tier-S{background:#ff7f7f} .tier-A{background:#ffbf7f} .tier-B{background:#ffdf7f} .tier-C{background:#ffff7f}
+.tier-D{background:#bfff7f} .tier-E{background:#7fff7f} .tier-F{background:#7fffff}
+.tier-chip{display:inline-grid;place-items:center;min-width:24px;height:20px;padding:0 5px;border-radius:6px;font-weight:800;font-size:12px;color:#141414;margin-left:2px}
 .rec{padding:12px 0;border-top:1px solid var(--border)}
 .rec:first-of-type{border-top:0}
 .rec h4{margin:0 0 4px;font-size:14.5px;display:flex;gap:8px;align-items:center}
@@ -1733,7 +1739,7 @@ function renderPlan() {
   <div class="plan-summary">
     <span class="pill"><b>${plannedCount(wk)}</b>/21 meals planned</span>
     ${st.active ? `<span class="pill">≈ <b>${fmtInt(st.avg.kcal)}</b> kcal/day per person</span>
-    <span class="pill">Nutrition grade <b>${st.grade}</b></span>` : ''}
+    <span class="pill">Nutrition tier <span class="tier-chip ${tierClass(st.grade)}">${st.grade}</span></span>` : ''}
     ${reuse.shared.length ? `<span class="pill" title="Fresh ingredients used by more than one recipe this week${reuse.single.length ? '. Used once: ' + esc(reuse.single.join(', ')) : ''}">♻ Shared: <b>${esc(reuse.shared.slice(0, 4).map(([k, c]) => `${k} ×${c}`).join(', '))}</b>${reuse.shared.length > 4 ? ` +${reuse.shared.length - 4}` : ''}</span>` : ''}
     <button class="pill" style="border:0" data-act="tab" data-tab="shop">🛒 <b>${shopCount}</b> items on the shopping list →</button>
     ${st.active ? `<button class="pill" style="border:0" data-act="tab" data-tab="nutrition">📊 Nutrition report →</button>` : ''}
@@ -2097,9 +2103,13 @@ function weekStats(wk) {
   add('legume', c.legume >= G.legume, c.legume >= G.legume - 1);
   add('wgrain', c.wgrain >= G.wgrain, c.wgrain >= Math.ceil(G.wgrain / 2));
   const score = checks.reduce((s, x) => s + x.s, 0) / checks.length;
-  const grade = !meals.length ? '–' : score >= 0.9 ? 'A' : score >= 0.75 ? 'B' : score >= 0.6 ? 'C' : score >= 0.45 ? 'D' : 'E';
+  const grade = !meals.length ? '–' : tierFor(score);
   return {T, G, useBase, assumed, days, meals, active: act.length, avg, pct, c, score, grade};
 }
+// Tier-list grades. S+ needs every check fully met; each step down is roughly one more half-missed check.
+const TIERS = [['S+', 1], ['S', 17 / 18], ['A', 15 / 18], ['B', 13 / 18], ['C', 11 / 18], ['D', 9 / 18], ['E', 7 / 18], ['F', 0]];
+function tierFor(score) { return TIERS.find(([, min]) => score >= min - 1e-9)[0]; }
+const tierClass = g => 'tier tier-' + String(g).replace('+', 'plus');
 function status(level) {
   const map = {good: ['st-good', '✓', 'On track'], low: ['st-warn', '▼', 'Low'], vlow: ['st-crit', '▼', 'Very low'], high: ['st-serious', '▲', 'High'], vhigh: ['st-crit', '▲', 'Too high'], na: ['st-na', '–', 'No data']};
   const [c, i, l] = map[level];
@@ -2174,7 +2184,16 @@ function renderNutrition() {
   else if (c.unique >= Math.min(12, c.planned)) goods.push(`Good variety — ${c.unique} different recipes.`);
   if (c.lowcov) recs.push({lvl: 'na', title: 'Some estimates are rough', text: `${c.lowcov} meal${c.lowcov === 1 ? ' has' : 's have'} several ingredients the estimator didn't recognise, so their nutrition may be understated.`});
   const lvlIcon = l => ({good: ['st-good', '✓'], low: ['st-warn', '!'], vlow: ['st-crit', '!'], high: ['st-serious', '!'], vhigh: ['st-crit', '!'], na: ['st-na', 'i']}[l]);
-  const intro = {A: 'An excellent, well-balanced week.', B: 'A solid week with a couple of things to tweak.', C: 'A reasonable base, but several areas could be improved.', D: 'This week is missing some important food groups.', E: 'This plan needs rebalancing — see the suggestions below.'}[st.grade] || '';
+  const intro = {
+    'S+': 'Flawless — every nutrition goal hit. Frame this week.',
+    S: 'Outstanding week, a hair off perfect.',
+    A: 'An excellent, well-balanced week.',
+    B: 'A solid week with a couple of things to tweak.',
+    C: 'A reasonable base, but several areas could be improved.',
+    D: 'This week is missing some important food groups.',
+    E: 'Quite unbalanced — see the suggestions below.',
+    F: 'This plan needs a rethink — start with the suggestions below.'
+  }[st.grade] || '';
 
   app.innerHTML = `${weekBar()}
   <div class="row small muted" style="margin:-4px 0 14px;justify-content:space-between">
@@ -2192,7 +2211,7 @@ function renderNutrition() {
   <div class="nutri-grid">
     <div style="display:grid;gap:14px">
       <section class="report panel">
-        <div class="grade"><div class="grade-letter" aria-label="Grade ${st.grade}">${st.grade}</div><div><h3 style="font-size:17px">Weekly nutrition report</h3><p class="muted small" style="margin:2px 0 0">${intro}</p></div></div>
+        <div class="grade"><div class="grade-letter ${tierClass(st.grade)}" role="img" aria-label="Tier ${st.grade}" title="Tiers: S+ (perfect) · S · A · B · C · D · E · F">${st.grade}</div><div><h3 style="font-size:17px">Weekly nutrition report</h3><p class="muted small" style="margin:2px 0 0">${intro}</p></div></div>
         ${recs.map(r => { const [cls, ic] = lvlIcon(r.lvl); return `<div class="rec"><h4><span class="status-badge ${cls}"><span class="dot" aria-hidden="true">${ic}</span></span>${esc(r.title)}</h4><p>${r.text}</p>${r.swap || ''}${r.sugg ? suggChips(r.sugg) : ''}</div>`; }).join('')}
         ${goods.length ? `<div class="rec"><h4>What's working</h4><ul class="goodlist">${goods.map(g => `<li>${esc(g)}</li>`).join('')}</ul></div>` : ''}
       </section>
