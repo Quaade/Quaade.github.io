@@ -62,7 +62,16 @@ a{color:var(--accent)}
 .top-inner{max-width:1440px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap}
 .brand{font-weight:750;font-size:17px;display:flex;gap:8px;align-items:center;letter-spacing:-.01em}
 .brand-mark{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:16px}
-.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;order:1}
+.theme-btn{order:2;margin-left:auto;width:36px;height:36px;font-size:18px;border-radius:999px}
+@media (max-width:700px){.tabs{order:3;width:100%}}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg-btn{border:0;background:transparent;padding:7px 11px;font-weight:600;font-size:13.5px;color:var(--text-2)}
+.seg-btn+.seg-btn{border-left:1px solid var(--border-strong)}
+.seg-btn:hover{background:var(--surface-2)}
+.seg-btn[aria-pressed="true"]{background:var(--accent-soft);color:var(--text)}
+.slot.leftover{background:color-mix(in srgb,var(--surface-2) 70%,var(--accent-soft))}
+.left-tag{display:block;font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:1px}
 .tabs button{border:0;background:none;padding:7px 14px;border-radius:999px;color:var(--text-2);font-weight:600;white-space:nowrap}
 .tabs button:hover{color:var(--text);background:var(--surface-2)}
 .tabs button[aria-selected="true"]{background:var(--text);color:var(--bg)}
@@ -99,6 +108,8 @@ details.opts>summary{list-style:none}
 details.opts>summary::-webkit-details-marker{display:none}
 .opts-pop{position:absolute;z-index:25;top:calc(100% + 6px);left:0;width:min(340px,calc(100vw - 32px));padding:14px;display:grid;gap:10px}
 .opts-pop fieldset{border:0;padding:0;margin:0;display:grid;gap:6px}
+.opts-pop label.chk{align-items:flex-start}
+.opts-pop label.chk input{margin-top:3px;flex:none}
 .opts-pop legend{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
 
 /* planner grid */
@@ -130,6 +141,7 @@ details.opts>summary::-webkit-details-marker{display:none}
 .thumb.lg{width:56px;height:56px;font-size:28px;border-radius:10px}
 .fav-dot{color:var(--fav)}
 .plan-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.plan-summary .pill{white-space:normal}
 
 /* recipes */
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
@@ -294,6 +306,7 @@ table.data th{font-size:11.5px;color:var(--muted);font-weight:650;text-transform
 <header class="top">
   <div class="top-inner">
     <div class="brand"><span class="brand-mark" aria-hidden="true">🥕</span>Meal Planner</div>
+    <button class="icon-btn theme-btn" id="theme-btn" data-act="theme"></button>
     <nav class="tabs" role="tablist" id="tabs">
       <button role="tab" data-tab="plan">Plan</button>
       <button role="tab" data-tab="recipes">Recipes</button>
@@ -960,7 +973,7 @@ const DEFAULT_SETTINGS = {
   staples: ['water', 'salt', 'pepper', 'black pepper', 'ground black pepper', 'freshly ground black pepper', 'salt and pepper', 'sea salt', 'ice'].join('\n'),
   proxies: ['https://api.allorigins.win/raw?url={url}', 'https://corsproxy.io/?url={url}', 'https://api.codetabs.com/v1/proxy/?quest={rawurl}'].join('\n'),
   onlineTried: false,
-  rnd: {pool: 'all', preferFav: true, balanced: true, veg: false, noRepeat: true, online: true, meals: {breakfast: true, lunch: true, dinner: true}}
+  rnd: {pool: 'all', preferFav: true, balanced: true, reuse: true, leftovers: 'some', useUp: '', veg: false, noRepeat: true, online: true, meals: {breakfast: false, lunch: false, dinner: true}}
 };
 const savedSettings = LS.get('settings', {});
 const S = {
@@ -1064,77 +1077,298 @@ function isFav(id) { return S.favs.has(id); }
 function toggleFav(id) { if (S.favs.has(id)) S.favs.delete(id); else S.favs.add(id); save.favs(); }
 
 /* =====================================================================
-   Randomizer
+   Smart randomizer
+   The selected slots are planned together: a weighted random start, then a
+   simulated-annealing search that scores the whole week on nutrition
+   (scaled to the meals being planned), variety, reuse of fresh ingredients,
+   "use up" ingredients, favourites and next-day leftovers.
    ===================================================================== */
-function weekCounts(wk, skip) {
-  const used = new Map(), counts = {fish: 0, red: 0, legume: 0};
-  eachSlot((d, m) => {
-    if (skip && skip.has(d + m)) return;
-    const r = slotRecipe(getSlot(wk, d, m)); if (!r) return;
-    used.set(r.id, (used.get(r.id) || 0) + 1);
-    const n = nutr(r); if (n.fish) counts.fish++; if (n.red || n.proc) counts.red++; if (n.legume) counts.legume++;
-  });
-  return {used, counts};
+const MEAL_SHARE = {breakfast: 0.25, lunch: 0.35, dinner: 0.4};
+const LONG_LIFE = new Set(['onion', 'red onion', 'shallot', 'garlic', 'potato', 'sweet potato', 'carrot', 'lemon', 'lime', 'ginger', 'apple', 'orange', 'banana', 'egg', 'butter']);
+const FRESH_CACHE = new Map();
+// Perishable ingredients a recipe needs (produce, meat & fish, dairy, bread), weighted by how wasteful a single use is.
+function freshKeys(r) {
+  const ck = r.id + '|' + (r._v || 0);
+  let k = FRESH_CACHE.get(ck);
+  if (k) return k;
+  k = new Map();
+  for (const line of r.ingredients || []) {
+    const p = parseLine(line), e = p.entry;
+    if (!e || !['pr', 'mf', 'de', 'bk'].includes(e.aisle) || e.grp === 'salt' || e.grp === 'spice') continue;
+    const key = e.grp === 'herb' ? p.key : e.names[0];
+    k.set(key, LONG_LIFE.has(key) ? 0.25 : e.grp === 'herb' ? 1.5 : 1);
+  }
+  FRESH_CACHE.set(ck, k);
+  return k;
 }
-function candidates(meal, used, counts, exclude) {
+function mainProtein(n) {
+  if (n._main) return n._main;
+  const g = n.groups, opts = [['meat', (g.red || 0) + (g.proc || 0)], ['poultry', g.poultry || 0], ['fish', g.fish || 0], ['legume', g.legume || 0], ['egg', g.egg || 0], ['dairy', g.dairy || 0]];
+  const [k, w] = opts.sort((a, b) => b[1] - a[1])[0];
+  return (n._main = w >= 30 ? k : 'veg');
+}
+function leftoverFriendly(r) {
+  if (!r) return false;
+  const t = (r.name + ' ' + (r.category || '') + ' ' + (r.tags || []).join(' ')).toLowerCase();
+  if (/batch|make-ahead/.test(t)) return true;
+  if (/fried|fritter|tempura|crispy|steak|poke|toast|sandwich|burger|taco|wrap|omelette|pancake|sushi/.test(t)) return false;
+  return /soup|curry|stew|chill?i|casserole|lasagn|bake|dh?al\b|daal|dahl|tagine|bolognese|ragu|\bpie\b|goulash|traybake|risotto|biryani|korma|masala|braise|hotpot|enchilada|pasta salad|meatball|rendang|chowder|gumbo|jambalaya|paella|moussaka|cannelloni|pilaf|pilau/.test(t);
+}
+function useUpTerms() {
+  return (S.settings.rnd.useUp || '').toLowerCase().split(/[,\n;]/).map(s => s.trim()).filter(s => s.length > 1)
+    .map(s => s.length > 4 ? s.replace(/oes$/, 'o').replace(/ies$/, '').replace(/(?<!s)s$/, '') : s);
+}
+const USEUP_CACHE = new Map();
+function usesTerm(r, term) {
+  const ck = r.id + '|' + (r._v || 0) + '|' + term;
+  let v = USEUP_CACHE.get(ck);
+  if (v === undefined) {
+    const re = new RegExp('(?<![a-z])' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    v = (r.ingredients || []).some(l => re.test(l.toLowerCase()));
+    USEUP_CACHE.set(ck, v);
+  }
+  return v;
+}
+function poolFor(meal) {
   const o = S.settings.rnd;
-  let list = ALL.filter(r => (r.meals || []).includes(meal) && r.id !== exclude);
+  // condiments and sides aren't a meal on their own
+  const condiment = r => {
+    const kcal = nutr(r).kcal;
+    return kcal < 150 || (kcal < 300 && /\b(sauce|dressing|dip|salsa|slaw|chutney|relish|marinade|seasoning|pickles?|gravy)\b/i.test(r.name));
+  };
+  let list = ALL.filter(r => (r.meals || []).includes(meal) && (meal === 'breakfast' || !condiment(r)));
   if (!o.online) list = list.filter(r => r.source !== 'mealdb');
   if (o.pool === 'fav') list = list.filter(r => isFav(r.id));
   else if (o.pool === 'mine') list = list.filter(r => isFav(r.id) || r.source === 'user');
   if (o.veg) list = list.filter(r => nutr(r).vegetarian);
-  if (o.noRepeat) { const l2 = list.filter(r => !used.has(r.id)); if (l2.length) list = l2; }
-  return list.map(r => {
+  // sampling weights only steer proposals; the week score makes the real decisions
+  const items = list.map(r => {
     const n = nutr(r); let w = 1;
-    if (o.preferFav && isFav(r.id)) w *= 4;
-    if (o.balanced) {
-      w *= 0.6 + Math.min(n.fb, 15) / 10 + Math.min(n.veg, 300) / 200 + Math.min(n.p, 40) / 50;
-      if (n.coverage < 0.5) w *= 0.5;
-      if ((n.red || n.proc) && counts.red >= 2) w *= 0.15;
-      if (n.proc) w *= 0.5;
-      if (n.fish && counts.fish < 2 && meal !== 'breakfast') w *= 3;
-      if (n.legume && counts.legume < 3) w *= 1.6;
-      if (n.wgrain) w *= 1.3;
-      if (n.sug > 25) w *= 0.5;
-      if (meal !== 'breakfast' && n.kcal < 200) w *= 0.4;
-    }
-    if (used.has(r.id)) w *= 0.15;
+    if (o.preferFav && isFav(r.id)) w *= 3;
+    if (n.coverage < 0.5) w *= 0.3;
+    if (o.balanced) w *= 0.6 + Math.min(n.fb, 15) / 10 + Math.min(n.veg, 300) / 200 + Math.min(n.p, 40) / 50;
+    if (meal !== 'breakfast' && n.kcal < 200) w *= 0.3;
     return {r, w};
   });
+  let acc = 0;
+  const cum = items.map(x => (acc += x.w));
+  return {
+    total: acc,
+    sample() {
+      const x = Math.random() * acc; let lo = 0, hi = cum.length - 1;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (cum[mid] < x) lo = mid + 1; else hi = mid; }
+      return items[lo].r;
+    }
+  };
 }
-function weightedPick(c) {
-  const tot = c.reduce((s, x) => s + x.w, 0); if (!tot) return null;
-  let x = Math.random() * tot;
-  for (const it of c) { x -= it.w; if (x <= 0) return it.r; }
-  return c[c.length - 1].r;
+// week: 21 entries (index = day*3 + meal) of {r} | {r, fixedLeft} | {left: true} | null.
+// {left: true} means "leftovers of the previous day's dinner" (index - 2).
+function scoreWeek(week, ctx) {
+  const o = S.settings.rnd, T = ctx.T;
+  let kcal = 0, p = 0, c = 0, f = 0, fb = 0, veg = 0, sug = 0, share = 0, planned = 0, ld = 0;
+  let fish = 0, redg = 0, legume = 0, wgrain = 0, lowcov = 0, odd = 0, favs = 0, lefts = 0, badLeft = 0, jit = 0;
+  const cooked = new Map();
+  for (let i = 0; i < 21; i++) {
+    const s = week[i]; if (!s) continue;
+    let r = s.r;
+    if (s.left) {
+      const src = week[i - 2];
+      if (!src || src.left || src.fixedLeft || !leftoverFriendly(src.r)) { badLeft++; continue; }
+      r = src.r; lefts++;
+    }
+    const m = MEALS[i % 3], n = nutr(r);
+    share += MEAL_SHARE[m]; planned++; if (m !== 'breakfast') ld++;
+    kcal += n.kcal; p += n.p; c += n.c; f += n.f; fb += n.fb; veg += n.veg; sug += n.sug;
+    if (n.fish) fish++; if (n.legume) legume++; if (n.wgrain) wgrain++;
+    redg += n.redg;
+    if (n.coverage < 0.6) lowcov++;
+    if ((m !== 'breakfast' && n.kcal < 200) || (m === 'breakfast' && n.kcal > 900)) odd++;
+    if (s.left || s.fixedLeft) continue;
+    cooked.set(r.id, (cooked.get(r.id) || 0) + 1);
+    if (isFav(r.id)) favs++;
+    let j = ctx.jit.get(r.id);
+    if (j === undefined) ctx.jit.set(r.id, (j = Math.random() * 1.2 - (ctx.recent.has(r.id) ? 1.2 : 0)));
+    jit += j;
+  }
+  let score = jit;
+  if (o.balanced && share) {
+    // targets are scaled to the share of the day the planned meals cover
+    const short = (v, t) => { const x = v / (t * share); return x < 1 ? (1 - x) ** 2 : 0; };
+    score -= 8 * short(fb, T.fibre) + 6 * short(p, T.protein) + 6 * short(veg, T.veg);
+    const dev = Math.abs(kcal / (T.kcal * 0.88 * share) - 1);
+    if (dev > 0.12) score -= 10 * (dev - 0.12) ** 2;
+    const fp = f * 9 / (p * 4 + c * 4 + f * 9 || 1);
+    if (fp > 0.35) score -= 40 * (fp - 0.35) ** 2;
+    const sx = sug / (T.sugar * share);
+    if (sx > 1) score -= Math.min(3, 2 * (sx - 1) ** 2);
+    score -= 1.5 * Math.max(0, (ld ? Math.min(2, Math.ceil(ld / 5)) : 0) - fish);
+    const redCap = T.redMax * Math.min(1, ld / 10);
+    if (redg > redCap) score -= (redg - redCap) / 200;
+    score -= 0.9 * Math.max(0, Math.min(3, Math.ceil(ld / 5)) - legume);
+    score -= 0.3 * Math.max(0, Math.round(planned / 3) - wgrain);
+  }
+  for (const k of cooked.values()) if (k > 1) score -= (o.noRepeat ? 3 : 0.8) * (k - 1);
+  if (o.reuse) {
+    const uses = new Map();
+    for (const id of cooked.keys()) for (const [k, w] of freshKeys(RMAP.get(id))) {
+      const u = uses.get(k); if (u) u.c++; else uses.set(k, {w, c: 1});
+    }
+    for (const {w, c: k} of uses.values()) score += k === 1 ? -0.25 * w : 0.3 * w;  // a second use finishes the pack; more adds little
+  }
+  for (const t of ctx.useUp) {
+    let k = 0;
+    for (const id of cooked.keys()) if (usesTerm(RMAP.get(id), t)) k++;
+    if (k) score += 2.5 + 0.5 * Math.min(k - 1, 1);
+  }
+  // spread main proteins: no more than about a quarter of cooked lunches/dinners from one source
+  const mains = new Map(); let ldCooked = 0;
+  for (const id of cooked.keys()) {
+    const r = RMAP.get(id); if (!(r.meals || []).some(m => m !== 'breakfast')) continue;
+    ldCooked++; const k = mainProtein(nutr(r)); mains.set(k, (mains.get(k) || 0) + 1);
+  }
+  const cap = Math.max(2, Math.ceil(ldCooked / 4));
+  for (const k of mains.values()) if (k > cap) score -= 1.2 * (k - cap);
+  if (o.preferFav) score += 0.5 * favs;
+  // "sometimes" rewards a couple of leftover lunches a week; "max" rewards every one
+  const leftScore = ctx.leftMode === 'max' ? 3 * lefts : ctx.leftMode === 'some' ? (lefts <= 2 ? 0.9 * lefts : 1.8 - 0.6 * (lefts - 2)) : 0;
+  return score - 0.8 * lowcov - odd - 4 * badLeft + leftScore;
+}
+function planSlots(vars, exclude) {
+  const wk = S.week, o = S.settings.rnd, mode = o.leftovers || 'some';
+  const week = Array(21).fill(null), varIdx = new Set(vars.map(v => v.i));
+  eachSlot((d, m) => {
+    const i = d * 3 + MEALS.indexOf(m);
+    if (varIdx.has(i)) return;
+    const s = getSlot(wk, d, m), r = slotRecipe(s);
+    if (r) week[i] = s.leftover ? {r, fixedLeft: true} : {r};
+  });
+  const recent = new Set();  // recipes planned last week get a nudge away, so weeks don't repeat
+  const prev = S.plan[shiftWeek(wk, -1)] || {};
+  Object.values(prev).forEach(day => Object.values(day || {}).forEach(sl => sl && sl.id && recent.add(sl.id)));
+  const ctx = {T: targets(), useUp: useUpTerms(), leftMode: mode, jit: new Map(), recent};
+  const pools = {};
+  vars.forEach(v => { if (!v.leftOnly && !pools[v.m]) pools[v.m] = poolFor(v.m); });
+  const canLeft = v => mode !== 'off' && v.m === 'lunch' && v.d > 0;
+  const propose = v => {
+    if (canLeft(v) && (v.leftOnly || Math.random() < 0.3)) return v.leftOnly && Math.random() < 0.3 ? null : {left: true};
+    if (v.leftOnly || !pools[v.m].total) return null;
+    let r = pools[v.m].sample();
+    if (r.id === exclude) r = pools[v.m].sample();
+    return r.id === exclude ? null : {r};
+  };
+  const score = () => scoreWeek(week, ctx);
+
+  if (vars.length === 1) {
+    // single slot: score many candidates and pick randomly among the best few
+    const v = vars[0], seen = new Map();
+    for (let k = 0; k < 300; k++) {
+      const x = propose(v); if (!x) continue;
+      const key = x.left ? '__left' : x.r.id;
+      if (seen.has(key)) continue;
+      week[v.i] = x; seen.set(key, {x, s: score()});
+    }
+    const top = [...seen.values()].sort((a, b) => b.s - a.s).slice(0, 4);
+    week[v.i] = top.length ? top[Math.floor(Math.random() * top.length)].x : null;
+  } else {
+    // greedy start (dinners first so lunches can follow them as leftovers), then anneal
+    const order = vars.slice().sort((a, b) => MEALS.indexOf(b.m) - MEALS.indexOf(a.m) || Math.random() - 0.5);
+    for (const v of order) {
+      let best = null, bestS = -Infinity;
+      for (let k = 0; k < 14; k++) { week[v.i] = propose(v); const s = score(); if (s > bestS) { bestS = s; best = week[v.i]; } }
+      week[v.i] = best;
+    }
+    const swappable = vars.filter(v => !v.leftOnly);
+    let cur = score(), best = cur, bestWeek = week.slice();
+    const iters = Math.min(4000, 150 * vars.length);
+    for (let it = 0; it < iters; it++) {
+      const temp = 0.6 * (1 - it / iters) + 0.02;
+      let undo;
+      if (swappable.length > 1 && Math.random() < 0.15) {
+        // move recipes between days (helps line dinners up with leftover lunches)
+        const a = swappable[Math.floor(Math.random() * swappable.length)];
+        const same = swappable.filter(v => v.m === a.m && v !== a);
+        if (!same.length) continue;
+        const b = same[Math.floor(Math.random() * same.length)];
+        [week[a.i], week[b.i]] = [week[b.i], week[a.i]];
+        undo = () => { [week[a.i], week[b.i]] = [week[b.i], week[a.i]]; };
+      } else {
+        const v = vars[Math.floor(Math.random() * vars.length)], old = week[v.i];
+        week[v.i] = propose(v);
+        undo = () => { week[v.i] = old; };
+      }
+      const s = score();
+      if (s >= cur || Math.random() < Math.exp((s - cur) / temp)) {
+        cur = s;
+        if (s > best) { best = s; bestWeek = week.slice(); }
+      } else undo();
+    }
+    bestWeek.forEach((x, i) => { week[i] = x; });
+  }
+
+  let filled = 0, lefts = 0, empty = 0;
+  for (const v of vars) {
+    const x = week[v.i], cur = getSlot(wk, v.d, v.m);
+    const src = x && x.left ? week[v.i - 2] : null;
+    if (!x || (x.left && (!src || src.left || src.fixedLeft || !leftoverFriendly(src.r)))) {
+      if (v.leftOnly) { if (cur && cur.leftover) setSlot(wk, v.d, v.m, null); }
+      else empty++;
+      continue;
+    }
+    if (x.left) { setSlot(wk, v.d, v.m, {id: src.r.id, leftover: true, locked: false}); lefts++; }
+    else { setSlot(wk, v.d, v.m, {id: x.r.id, locked: false}); filled++; }
+  }
+  return {filled, lefts, empty};
+}
+function mealsLabel(meals) {
+  const pl = {breakfast: 'breakfasts', lunch: 'lunches', dinner: 'dinners'};
+  if (meals.length === 3) return 'meals';
+  return meals.map(m => pl[m]).join(' & ');
 }
 function randomize(mode, only) {
-  const wk = S.week, o = S.settings.rnd;
-  let slots = [];
-  if (only) slots = [only];
-  else eachSlot((d, m) => {
-    if (o.meals[m] === false) return;
-    const s = getSlot(wk, d, m);
-    if (mode === 'empty' ? !s : !(s && s.locked)) slots.push({d, m});
-  });
-  if (!slots.length) { toast(mode === 'empty' ? 'No empty slots to fill.' : 'Every slot is locked.'); return; }
-  const skip = new Set(slots.map(s => s.d + s.m));
-  const {used, counts} = weekCounts(wk, skip);
-  let filled = 0, failed = 0;
-  // shuffle order so constraints (e.g. fish quota) don't always land on Monday
-  slots.sort(() => Math.random() - 0.5);
-  for (const {d, m} of slots) {
-    const cur = getSlot(wk, d, m);
-    const pick = weightedPick(candidates(m, used, counts, only ? cur?.id : null));
-    if (!pick) { failed++; continue; }
-    setSlot(wk, d, m, {id: pick.id, locked: false});
-    used.set(pick.id, (used.get(pick.id) || 0) + 1);
-    const n = nutr(pick); if (n.fish) counts.fish++; if (n.red || n.proc) counts.red++; if (n.legume) counts.legume++;
-    filled++;
+  const wk = S.week, o = S.settings.rnd, lmode = o.leftovers || 'some';
+  const vars = [], seen = new Set();
+  const add = (d, m, leftOnly) => {
+    const i = d * 3 + MEALS.indexOf(m);
+    if (!seen.has(i)) { seen.add(i); vars.push({i, d, m, leftOnly}); }
+  };
+  const sel = MEALS.filter(m => o.meals[m]);
+  if (only) add(only.d, only.m, false);
+  else {
+    if (!sel.length) { toast('Pick at least one meal (Breakfast, Lunch or Dinner) to fill.'); return; }
+    eachSlot((d, m) => {
+      if (!o.meals[m]) return;
+      const s = getSlot(wk, d, m);
+      if (mode === 'empty' ? !s : !(s && s.locked)) add(d, m, false);
+    });
+    if (!vars.length) { toast(mode === 'empty' ? `No empty ${mealsLabel(sel)} to fill.` : `Every ${mealsLabel(sel).replace(/s$/, '')} slot is locked.`); return; }
+    // Leftovers can go into next-day lunches even when lunches aren't selected
+    if (lmode !== 'off' && !o.meals.lunch) {
+      for (let d = 1; d < 7; d++) {
+        const s = getSlot(wk, d, 'lunch'), dinnerChanging = seen.has((d - 1) * 3 + 2);
+        if (!s || (s.leftover && !s.locked && dinnerChanging)) add(d, 'lunch', true);
+      }
+    }
   }
-  if (failed && !filled) toast('No recipes match your randomizer options for those meals.');
-  else if (!only) toast(`🎲 Picked ${filled} meal${filled === 1 ? '' : 's'}` + (failed ? ` (${failed} slot${failed === 1 ? '' : 's'} had no matching recipe)` : ''));
+  const cur = only ? getSlot(wk, only.d, only.m) : null;
+  const {filled, lefts, empty} = planSlots(vars, cur && !cur.leftover ? cur.id : null);
+  if (!filled && !lefts) toast('No recipes match your randomizer options for those meals.');
+  else if (!only) {
+    const shared = weekReuse(wk).shared.length;
+    toast(`🎲 Planned ${filled} ${filled === 1 ? 'meal' : 'meals'}` + (lefts ? ` + ${lefts} leftover lunch${lefts === 1 ? '' : 'es'}` : '') +
+      (o.reuse && shared ? ` · ${shared} fresh ingredient${shared === 1 ? '' : 's'} shared` : '') + (empty ? ` (${empty} slot${empty === 1 ? '' : 's'} had no match)` : ''), 3500);
+  }
   render();
+}
+function weekReuse(wk) {
+  const uses = new Map(), seen = new Set();
+  eachSlot((d, m) => {
+    const s = getSlot(wk, d, m), r = slotRecipe(s);
+    if (!r || s.leftover || seen.has(r.id)) return;
+    seen.add(r.id);
+    for (const k of freshKeys(r).keys()) uses.set(k, (uses.get(k) || 0) + 1);
+  });
+  const all = [...uses].filter(([k]) => !LONG_LIFE.has(k));
+  return {shared: all.filter(([, c]) => c > 1).sort((a, b) => b[1] - a[1]), single: all.filter(([, c]) => c === 1).map(([k]) => k)};
 }
 
 /* =====================================================================
@@ -1393,10 +1627,17 @@ async function importFromUrl(url, onStatus) {
    ===================================================================== */
 const app = $('#app');
 function setTab(t) { S.tab = t; LS.set('tab', t); render(); window.scrollTo(0, 0); }
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+function effectiveTheme() { const t = S.settings.theme; return t === 'light' || t === 'dark' ? t : darkQuery.matches ? 'dark' : 'light'; }
 function applyTheme() {
   const t = S.settings.theme;
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  const b = $('#theme-btn'), dark = effectiveTheme() === 'dark';
+  b.textContent = dark ? '☀️' : '🌙';
+  b.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+  b.setAttribute('aria-label', b.title);
 }
+darkQuery.addEventListener('change', applyTheme);
 function render() {
   $$('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === S.tab)));
   const shopBtn = $('#tabs [data-tab="shop"]');
@@ -1422,7 +1663,7 @@ function nutLine(r) { const n = nutr(r); return `${fmtInt(n.kcal)} kcal · ${Mat
 
 /* ---------- Plan ---------- */
 function renderPlan() {
-  const wk = S.week, o = S.settings.rnd, todayIdx = S.week === mondayOf(new Date()) ? (new Date().getDay() + 6) % 7 : -1;
+  const wk = S.week, o = S.settings.rnd, sel = MEALS.filter(m => o.meals[m]), todayIdx = S.week === mondayOf(new Date()) ? (new Date().getDay() + 6) % 7 : -1;
   let days = '';
   for (let d = 0; d < 7; d++) {
     const date = dateOf(wk, d);
@@ -1433,12 +1674,13 @@ function renderPlan() {
       ${MEALS.map(m => slotHtml(d, m)).join('')}
     </section>`;
   }
-  const st = weekStats(wk);
+  const st = weekStats(wk), reuse = weekReuse(wk);
   const shopCount = buildShopping(wk).filter(it => !(S.settings.hideStaples && it.staple)).length;
   app.innerHTML = `${weekBar()}
   <div class="toolbar">
-    <button class="btn primary" data-act="rnd" data-mode="empty">🎲 Fill empty slots</button>
-    <button class="btn" data-act="rnd" data-mode="all" title="Re-pick every slot that isn't locked">🔄 Re-roll unlocked</button>
+    <div class="seg" role="group" aria-label="Meals the randomizer fills">${MEALS.map(m => `<button class="seg-btn" data-act="rnd-meal" data-meal="${m}" aria-pressed="${!!o.meals[m]}">${o.meals[m] ? '✓ ' : ''}${MEAL_LABEL[m]}</button>`).join('')}</div>
+    <button class="btn primary" data-act="rnd" data-mode="empty" ${sel.length ? '' : 'disabled'}>🎲 Fill empty ${sel.length ? mealsLabel(sel) : 'slots'}</button>
+    <button class="btn" data-act="rnd" data-mode="all" ${sel.length ? '' : 'disabled'} title="Re-pick all unlocked ${sel.length ? mealsLabel(sel) : 'meals'} this week (🔒 keeps a meal)">🔄 Re-roll</button>
     <details class="opts">
       <summary class="btn">⚙ Randomizer options</summary>
       <div class="opts-pop panel">
@@ -1448,14 +1690,18 @@ function renderPlan() {
           <label class="chk"><input type="radio" name="rpool" data-rnd="pool" value="fav" ${o.pool === 'fav' ? 'checked' : ''}> Favourites only</label>
           <label class="chk"><input type="checkbox" data-rnd="online" ${o.online ? 'checked' : ''}> Include online library</label>
         </fieldset>
+        <fieldset><legend>Smart planning</legend>
+          <label class="chk"><input type="checkbox" data-rnd="balanced" ${o.balanced ? 'checked' : ''}> <span>Balance nutrition across the week <span class="faint small">— fibre, protein, veg, fish twice a week, limit red meat</span></span></label>
+          <label class="chk"><input type="checkbox" data-rnd="reuse" ${o.reuse ? 'checked' : ''}> <span>Reuse fresh ingredients <span class="faint small">— pick meals that share herbs, veg, meat and dairy</span></span></label>
+          <label class="field small"><span>Leftovers for next-day lunch</span>
+            <select data-rnd="leftovers"><option value="off" ${o.leftovers === 'off' ? 'selected' : ''}>Off</option><option value="some" ${o.leftovers === 'some' ? 'selected' : ''}>Sometimes</option><option value="max" ${o.leftovers === 'max' ? 'selected' : ''}>As often as possible</option></select>
+            <span class="faint" style="font-weight:400">Batch-friendly dinners (curries, soups, chilli…) fill the next day's empty lunch. The shopping list covers the extra portions.</span></label>
+          <label class="field small"><span>Use up ingredients I have</span><input type="text" data-rnd="useUp" value="${esc(o.useUp || '')}" placeholder="e.g. spinach, chicken thighs, feta"></label>
+        </fieldset>
         <fieldset><legend>Preferences</legend>
-          <label class="chk"><input type="checkbox" data-rnd="balanced" ${o.balanced ? 'checked' : ''}> Balance nutrition <span class="faint small">(fibre, veg, fish twice a week, limit red meat)</span></label>
           <label class="chk"><input type="checkbox" data-rnd="preferFav" ${o.preferFav ? 'checked' : ''}> Favour my favourites</label>
           <label class="chk"><input type="checkbox" data-rnd="noRepeat" ${o.noRepeat ? 'checked' : ''}> Avoid repeats within the week</label>
           <label class="chk"><input type="checkbox" data-rnd="veg" ${o.veg ? 'checked' : ''}> Vegetarian only</label>
-        </fieldset>
-        <fieldset><legend>Meals to fill</legend>
-          <div class="row">${MEALS.map(m => `<label class="chk"><input type="checkbox" data-rnd-meal="${m}" ${o.meals[m] !== false ? 'checked' : ''}> ${MEAL_LABEL[m]}</label>`).join('')}</div>
         </fieldset>
       </div>
     </details>
@@ -1468,6 +1714,7 @@ function renderPlan() {
     <span class="pill"><b>${plannedCount(wk)}</b>/21 meals planned</span>
     ${st.active ? `<span class="pill">≈ <b>${fmtInt(st.avg.kcal)}</b> kcal/day per person</span>
     <span class="pill">Nutrition grade <b>${st.grade}</b></span>` : ''}
+    ${reuse.shared.length ? `<span class="pill" title="Fresh ingredients used by more than one recipe this week${reuse.single.length ? '. Used once: ' + esc(reuse.single.join(', ')) : ''}">♻ Shared: <b>${esc(reuse.shared.slice(0, 4).map(([k, c]) => `${k} ×${c}`).join(', '))}</b>${reuse.shared.length > 4 ? ` +${reuse.shared.length - 4}` : ''}</span>` : ''}
     <button class="pill" style="border:0" data-act="tab" data-tab="shop">🛒 <b>${shopCount}</b> items on the shopping list →</button>
     ${st.active ? `<button class="pill" style="border:0" data-act="tab" data-tab="nutrition">📊 Nutrition report →</button>` : ''}
   </div>`;
@@ -1480,8 +1727,8 @@ function slotHtml(d, m) {
   else if (s.id === '__out') body = `<div class="slot-special">🍽️ Eating out</div>`;
   else if (s.id === '__left') body = `<div class="slot-special">🥡 Leftovers</div>`;
   else if (!r) body = `<div class="slot-special faint">Recipe no longer available</div>`;
-  else body = `<button class="slot-main" data-act="open" data-id="${esc(r.id)}">${thumb(r)}<span style="min-width:0"><span class="slot-name">${isFav(r.id) ? '<span class="fav-dot">★</span> ' : ''}${esc(r.name)}</span><span class="slot-meta">${fmtInt(nutr(r).kcal)} kcal · ${Math.round(nutr(r).p)} g protein</span></span></button>`;
-  return `<div class="slot ${s?.locked ? 'locked' : ''}" data-day="${d}" data-meal="${m}" ${r ? 'draggable="true"' : ''}>
+  else body = `<button class="slot-main" data-act="open" data-id="${esc(r.id)}">${thumb(r)}<span style="min-width:0">${s.leftover ? '<span class="left-tag">🥡 Leftovers</span>' : ''}<span class="slot-name">${isFav(r.id) ? '<span class="fav-dot">★</span> ' : ''}${esc(r.name)}</span><span class="slot-meta">${fmtInt(nutr(r).kcal)} kcal · ${Math.round(nutr(r).p)} g protein</span></span></button>`;
+  return `<div class="slot ${s?.locked ? 'locked' : ''} ${s?.leftover ? 'leftover' : ''}" data-day="${d}" data-meal="${m}" ${r ? 'draggable="true"' : ''}>
     <div class="slot-top"><span class="slot-label">${MEAL_LABEL[m]}</span>
       <span class="slot-tools">
         <button class="icon-btn" data-act="slot-rnd" title="Random ${MEAL_LABEL[m].toLowerCase()}">🎲</button>
@@ -1494,6 +1741,7 @@ function slotHtml(d, m) {
 /* ---------- Picker ---------- */
 function openPicker(d, m) {
   S.pick = {d, m, q: '', any: false, fav: false, limit: 120};
+  const prevDinner = d > 0 ? slotRecipe(getSlot(S.week, d - 1, 'dinner')) : null;
   openModal(`<div class="modal-head"><h2>${MEAL_LABEL[m]} · ${DAY_NAMES[d]}</h2><button class="icon-btn close-x" data-act="close" aria-label="Close">✕</button></div>
   <div class="modal-body">
     <div class="pick-filters">
@@ -1503,7 +1751,7 @@ function openPicker(d, m) {
     </div>
     <div class="pick-quick">
       <button class="btn sm" data-act="pick-random">🎲 Surprise me</button>
-      <button class="btn sm" data-act="pick-special" data-id="__left">🥡 Leftovers</button>
+      <button class="btn sm" data-act="pick-special" data-id="__left">🥡 Leftovers${prevDinner ? ': ' + esc(prevDinner.name) : ''}</button>
       <button class="btn sm" data-act="pick-special" data-id="__out">🍽️ Eating out</button>
     </div>
     <div class="pick-list" id="pick-list"></div>
@@ -1783,8 +2031,8 @@ function weekStats(wk) {
   for (let d = 0; d < 7; d++) {
     const day = {d, kcal: 0, p: 0, c: 0, f: 0, fb: 0, veg: 0, sug: 0, count: 0};
     for (const m of MEALS) {
-      const r = slotRecipe(getSlot(wk, d, m)); if (!r) continue;
-      const n = nutr(r); meals.push({d, m, r, n});
+      const sl = getSlot(wk, d, m), r = slotRecipe(sl); if (!r) continue;
+      const n = nutr(r); meals.push({d, m, r, n, left: !!sl.leftover});
       for (const k of ['kcal', 'p', 'c', 'f', 'fb', 'veg', 'sug']) day[k] += n[k];
       day.count++;
     }
@@ -1881,7 +2129,7 @@ function renderNutrition() {
   else if (st.pct.f < T.fatLo) recs.push({lvl: 'low', title: 'Very low in fat', text: `Only ${Math.round(st.pct.f)}% of energy is from fat. Some healthy fats help you absorb vitamins A, D, E and K — add olive oil, nuts, seeds, avocado or oily fish.`});
   else goods.push(`Balanced fat (${Math.round(st.pct.f)}% of energy).`);
   if (a.sug > T.sugar) recs.push({lvl: a.sug > T.sugar * 1.6 ? 'vhigh' : 'high', title: 'Added sugar is high', text: `Roughly ${Math.round(a.sug)} g of added sugar a day from recipes (sugar, honey, syrups, chocolate, jam) — the recommended maximum is ${T.sugar} g. Cut syrup toppings, use fruit for sweetness, and check sauces.`, sugg: suggestions('lowsugar', ['breakfast'], S.week)});
-  const repeats = [...st.meals.reduce((mp, x) => mp.set(x.r.name, (mp.get(x.r.name) || 0) + 1), new Map())].filter(([, n]) => n >= 3);
+  const repeats = [...st.meals.filter(x => !x.left).reduce((mp, x) => mp.set(x.r.name, (mp.get(x.r.name) || 0) + 1), new Map())].filter(([, n]) => n >= 3);
   if (repeats.length) recs.push({lvl: 'na', title: 'Low variety', text: `${repeats.map(([n, k]) => `${esc(n)} appears ${k}×`).join('; ')}. Eating a wider range of foods covers more vitamins and minerals.`});
   else if (c.unique >= Math.min(12, c.planned)) goods.push(`Good variety — ${c.unique} different recipes.`);
   if (c.lowcov) recs.push({lvl: 'na', title: 'Some estimates are rough', text: `${c.lowcov} meal${c.lowcov === 1 ? ' has' : 's have'} several ingredients the estimator didn't recognise, so their nutrition may be understated.`});
@@ -2065,7 +2313,16 @@ const ACT = {
   close: () => closeModal(),
   overlay: (el, ev) => { if (ev.target === el) closeModal(); },
   pick: el => { const P = S.pick; setSlot(S.week, P.d, P.m, {id: el.dataset.id, locked: false}); closeModal(); render(); },
-  'pick-special': el => { const P = S.pick; setSlot(S.week, P.d, P.m, {id: el.dataset.id, locked: false}); closeModal(); render(); },
+  'pick-special': el => {
+    const P = S.pick, prev = el.dataset.id === '__left' && P.d > 0 ? slotRecipe(getSlot(S.week, P.d - 1, 'dinner')) : null;
+    setSlot(S.week, P.d, P.m, prev ? {id: prev.id, leftover: true, locked: false} : {id: el.dataset.id, locked: false});
+    closeModal(); render();
+  },
+  'rnd-meal': el => { const m = el.dataset.meal; S.settings.rnd.meals[m] = !S.settings.rnd.meals[m]; save.settings(); render(); },
+  theme: () => {
+    S.settings.theme = effectiveTheme() === 'dark' ? 'light' : 'dark';
+    save.settings(); applyTheme(); if (S.tab === 'settings') render();
+  },
   'pick-random': () => { const P = S.pick; closeModal(); randomize('one', {d: P.d, m: P.m}); },
   'pick-more': () => { S.pick.limit += 200; renderPickList(); },
   'add-to-plan': el => {
