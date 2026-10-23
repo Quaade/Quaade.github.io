@@ -1,0 +1,2221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Weekly Meal Planner</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f6f5f1; --surface:#fcfcfb; --surface-2:#efeee9; --surface-3:#e6e5df;
+  --border:rgba(11,11,11,.10); --border-strong:rgba(11,11,11,.20);
+  --text:#0b0b0b; --text-2:#52514e; --muted:#898781;
+  --accent:#1f7a4d; --accent-ink:#ffffff; --accent-soft:#e2f0e7;
+  --fav:#c98500;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --good-text:#006300;
+  --grid:#e1e0d9; --axis:#c3c2b7;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.04);
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0d0d0d; --surface:#1a1a19; --surface-2:#242422; --surface-3:#2e2e2b;
+    --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.20);
+    --text:#ffffff; --text-2:#c3c2b7; --muted:#898781;
+    --accent:#3fae74; --accent-ink:#06210f; --accent-soft:#15301f;
+    --fav:#eda100;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --good-text:#0ca30c; --grid:#2c2c2a; --axis:#383835;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d0d0d; --surface:#1a1a19; --surface-2:#242422; --surface-3:#2e2e2b;
+  --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.20);
+  --text:#ffffff; --text-2:#c3c2b7; --muted:#898781;
+  --accent:#3fae74; --accent-ink:#06210f; --accent-soft:#15301f;
+  --fav:#eda100;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --good-text:#0ca30c; --grid:#2c2c2a; --axis:#383835;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3{margin:0;line-height:1.2}
+h2{font-size:20px} h3{font-size:15px}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spacer{flex:1}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--text-2)} .faint{color:var(--muted)} .small{font-size:13px}
+.hidden{display:none!important}
+
+/* header */
+.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1440px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap}
+.brand{font-weight:750;font-size:17px;display:flex;gap:8px;align-items:center;letter-spacing:-.01em}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:16px}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs button{border:0;background:none;padding:7px 14px;border-radius:999px;color:var(--text-2);font-weight:600;white-space:nowrap}
+.tabs button:hover{color:var(--text);background:var(--surface-2)}
+.tabs button[aria-selected="true"]{background:var(--text);color:var(--bg)}
+.tab-badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:999px;font-size:11px;line-height:18px;background:var(--accent);color:var(--accent-ink);text-align:center}
+main{max-width:1440px;margin:0 auto;padding:16px 16px 60px}
+
+/* controls */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border-strong);background:var(--surface);padding:7px 12px;border-radius:10px;font-weight:600;font-size:14px;line-height:1.2;white-space:nowrap;color:var(--text)}
+.btn:hover{background:var(--surface-2)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.danger{color:var(--crit)}
+.btn.sm{padding:4px 9px;font-size:13px;border-radius:8px}
+.icon-btn{border:0;background:transparent;width:28px;height:28px;border-radius:8px;display:inline-grid;place-items:center;color:var(--text-2);font-size:14px;padding:0;flex:none}
+.icon-btn:hover{background:var(--surface-3);color:var(--text)}
+.icon-btn[aria-pressed="true"]{color:var(--text)}
+input[type=text],input[type=url],input[type=number],input[type=search],select,textarea{background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:7px 10px;min-width:0;max-width:100%}
+textarea{width:100%;resize:vertical;line-height:1.4}
+label.chk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:var(--surface-2);font-size:12.5px;color:var(--text-2);white-space:nowrap}
+.pill b{color:var(--text);font-weight:650}
+
+/* week bar & toolbar */
+.weekbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.weekbar h2{min-width:0;font-size:20px;margin:0 4px}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+details.opts{position:relative}
+details.opts>summary{list-style:none}
+details.opts>summary::-webkit-details-marker{display:none}
+.opts-pop{position:absolute;z-index:25;top:calc(100% + 6px);left:0;width:min(340px,calc(100vw - 32px));padding:14px;display:grid;gap:10px}
+.opts-pop fieldset{border:0;padding:0;margin:0;display:grid;gap:6px}
+.opts-pop legend{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
+
+/* planner grid */
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+@media (max-width:1180px){.week{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}
+.day{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px;display:flex;flex-direction:column;gap:8px;min-width:0;box-shadow:var(--shadow)}
+.day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.day-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:2px 4px}
+.day-name{font-weight:700}
+.day-kcal{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.slot{position:relative;border-radius:10px;background:var(--surface-2);min-height:104px;display:flex;flex-direction:column;border:1px solid transparent;transition:border-color .12s,background .12s}
+.slot.drag-over{border-color:var(--accent);background:var(--accent-soft)}
+.slot.locked{box-shadow:inset 0 0 0 1px var(--border-strong)}
+.slot-top{display:flex;align-items:center;justify-content:space-between;padding:5px 4px 0 9px;min-height:28px}
+.slot-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.slot-tools{display:flex;gap:0;opacity:.55;transition:opacity .12s}
+.slot:hover .slot-tools,.slot:focus-within .slot-tools,.slot.locked .slot-tools{opacity:1}
+@media (hover:none){.slot-tools{opacity:1}}
+.slot-tools .icon-btn{width:24px;height:24px;font-size:12.5px}
+.slot-main{border:0;background:none;text-align:left;padding:4px 9px 9px;display:flex;gap:8px;align-items:flex-start;flex:1;color:inherit;min-width:0}
+.slot-main:hover .slot-name{text-decoration:underline;text-decoration-color:var(--muted)}
+.slot-name{font-weight:620;font-size:13.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.slot-meta{font-size:11.5px;color:var(--text-2);margin-top:3px;font-variant-numeric:tabular-nums}
+.slot-empty{flex:1;border:1.5px dashed var(--border-strong);border-radius:8px;margin:4px 8px 8px;background:transparent;color:var(--text-2);font-weight:600;font-size:13px}
+.slot-empty:hover{border-color:var(--accent);color:var(--accent);background:var(--surface)}
+.slot-special{padding:6px 9px 10px;font-weight:600;font-size:13.5px;color:var(--text-2)}
+.thumb{position:relative;flex:none;width:40px;height:40px;border-radius:8px;background:var(--surface-3);display:grid;place-items:center;overflow:hidden;font-size:21px}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumb.lg{width:56px;height:56px;font-size:28px;border-radius:10px}
+.fav-dot{color:var(--fav)}
+.plan-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+/* recipes */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filters input[type=search]{flex:1 1 220px}
+.lib-status{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.card-img{border:0;padding:0;background:var(--surface-3);aspect-ratio:16/10;position:relative;display:grid;place-items:center;font-size:44px;overflow:hidden}
+.card-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.card-title{border:0;background:none;padding:0;text-align:left;font-weight:680;font-size:14.5px;line-height:1.25;color:var(--text)}
+.card-title:hover{text-decoration:underline}
+.card-meta{font-size:12.5px;color:var(--text-2)}
+.card-nut{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:auto;padding-top:4px}
+.star{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:999px;border:0;background:color-mix(in srgb,var(--surface) 88%,transparent);display:grid;place-items:center;font-size:17px;color:var(--muted);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.star[aria-pressed="true"]{color:var(--fav)}
+.star.inline{position:static;box-shadow:none;background:var(--surface-2)}
+.src-tag{position:absolute;left:8px;top:8px;font-size:11px;font-weight:650;padding:2px 7px;border-radius:999px;background:color-mix(in srgb,var(--surface) 88%,transparent);color:var(--text-2)}
+.more{display:flex;justify-content:center;margin-top:16px}
+.empty-state{padding:40px 16px;text-align:center;color:var(--text-2)}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow-y:auto}
+.modal{background:var(--surface);border-radius:18px;width:min(760px,100%);box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin-bottom:4vh}
+.modal.wide{width:min(980px,100%)}
+.modal-head{display:flex;align-items:center;gap:10px;padding:14px 16px 10px 20px;border-bottom:1px solid var(--border)}
+.modal-head h2{flex:1;font-size:18px}
+.modal-body{padding:16px 20px 20px}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--border)}
+.close-x{font-size:18px}
+.hero{height:220px;background:var(--surface-3);position:relative;display:grid;place-items:center;font-size:84px;border-radius:18px 18px 0 0;overflow:hidden}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero .close-x{position:absolute;top:10px;right:10px;background:color-mix(in srgb,var(--surface) 90%,transparent);width:34px;height:34px;border-radius:999px}
+.detail-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:24px;margin-top:16px}
+@media (max-width:700px){.detail-cols{grid-template-columns:1fr}}
+.detail-cols ul,.detail-cols ol{margin:8px 0 0;padding-left:20px}
+.detail-cols li{margin:4px 0}
+.ing-unk{text-decoration:underline dotted var(--muted);text-underline-offset:3px}
+.nut-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:12px}
+@media (max-width:560px){.nut-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.nut{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.nut b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.nut span{font-size:11.5px;color:var(--text-2)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.add-to{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--surface-2);padding:10px;border-radius:12px;margin-top:16px}
+
+/* picker */
+.pick-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.pick-filters input[type=search]{flex:1 1 200px}
+.pick-quick{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.pick-list{display:flex;flex-direction:column;gap:2px;max-height:min(58vh,560px);overflow-y:auto;margin:0 -8px;padding:0 8px}
+.pick-row{display:flex;gap:10px;align-items:center;border:0;background:none;text-align:left;padding:7px 8px;border-radius:10px;width:100%;color:inherit}
+.pick-row:hover,.pick-row:focus-visible{background:var(--surface-2)}
+.pick-row .nm{font-weight:620}
+.pick-row .sub{font-size:12px;color:var(--text-2)}
+.pick-row .nums{margin-left:auto;font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* form */
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:600px){.form-grid{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:4px}
+.field>span{font-size:12.5px;font-weight:650;color:var(--text-2)}
+.field.full{grid-column:1/-1}
+.import-box{background:var(--accent-soft);border-radius:12px;padding:12px;margin-bottom:16px}
+.import-box .row input{flex:1 1 260px}
+.status{font-size:13px;margin-top:6px;min-height:1em}
+.status.err{color:var(--crit)}
+.status.ok{color:var(--good-text)}
+
+/* shopping */
+.add-item{display:flex;gap:8px;flex-wrap:wrap;padding:12px;margin-bottom:14px}
+.add-item input[name=name]{flex:2 1 200px}
+.add-item input[name=qty]{flex:0 1 110px}
+.shop-cols{columns:3 300px;column-gap:14px}
+.aisle{break-inside:avoid;margin-bottom:14px;padding:12px 14px}
+.aisle h3{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.aisle h3 .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:600}
+.aisle ul{list-style:none;margin:0;padding:0}
+.aisle li{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--border)}
+.aisle li:first-child{border-top:0}
+.aisle li label{display:flex;gap:10px;flex:1;cursor:pointer;min-width:0}
+.aisle li input{margin-top:2px;flex:none}
+.it-name{font-weight:560}
+.it-qty{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;padding-left:8px}
+.it-for{font-size:11.5px;color:var(--muted);margin-top:1px}
+.aisle li.done .it-name,.aisle li.done .it-qty{text-decoration:line-through;color:var(--muted)}
+.tag-extra{font-size:10.5px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-left:6px}
+
+/* nutrition */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.tile{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.tile-label{font-size:12.5px;font-weight:650;color:var(--text-2)}
+.tile-val{font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.tile-val small{font-size:14px;font-weight:600;color:var(--text-2);margin-left:2px}
+.tile-target{font-size:12px;color:var(--muted)}
+.meter{position:relative;height:8px;border-radius:999px;background:var(--surface-3);overflow:visible}
+.meter>i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--text-2)}
+.meter>b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);border-radius:1px}
+.status-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:650;color:var(--text)}
+.status-badge .dot{width:16px;height:16px;border-radius:999px;display:grid;place-items:center;font-size:10px;color:#fff;font-weight:800}
+.st-good .dot{background:var(--good)} .st-warn .dot{background:var(--warn);color:#2b1d00} .st-serious .dot{background:var(--serious);color:#2b1000} .st-crit .dot{background:var(--crit)} .st-na .dot{background:var(--muted)}
+.nutri-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:980px){.nutri-grid{grid-template-columns:1fr}}
+.chart-box{padding:14px 16px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2);margin:6px 0 4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.chart{position:relative}
+.chart svg{display:block;width:100%;overflow:visible}
+.tooltip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 6px 20px rgba(0,0,0,.15);border-radius:10px;padding:8px 10px;font-size:12.5px;min-width:150px;z-index:5;transform:translate(-50%,-100%);white-space:nowrap}
+.tooltip .tt-row{display:flex;gap:10px;justify-content:space-between;font-variant-numeric:tabular-nums}
+.tooltip .tt-row span:first-child{color:var(--text-2)}
+table.data{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+table.data th,table.data td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)}
+table.data th:first-child,table.data td:first-child{text-align:left}
+table.data th{font-size:11.5px;color:var(--muted);font-weight:650;text-transform:uppercase;letter-spacing:.04em}
+.table-wrap{overflow-x:auto}
+.report{padding:16px 18px}
+.grade{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.grade-letter{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:30px;font-weight:800;background:var(--surface-3)}
+.rec{padding:12px 0;border-top:1px solid var(--border)}
+.rec:first-of-type{border-top:0}
+.rec h4{margin:0 0 4px;font-size:14.5px;display:flex;gap:8px;align-items:center}
+.rec p{margin:0;color:var(--text-2);font-size:13.5px}
+.sugg{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sugg button{border:1px solid var(--border-strong);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:12.5px;color:var(--text)}
+.sugg button:hover{border-color:var(--accent)}
+.swap{margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;background:var(--surface-2);padding:8px 10px;border-radius:10px}
+.counts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px}
+.count{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.count b{font-size:18px;display:block}
+.count span{font-size:12px;color:var(--text-2)}
+.goodlist{margin:6px 0 0;padding-left:0;list-style:none;font-size:13.5px;color:var(--text-2)}
+.goodlist li{margin:3px 0}
+.goodlist li::before{content:"✓ ";color:var(--good-text);font-weight:800}
+
+/* settings */
+.settings{display:grid;gap:14px;max-width:820px}
+.settings section{padding:16px 18px;display:grid;gap:12px}
+.settings h3{font-size:16px}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80;max-width:calc(100vw - 32px)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media (max-width:600px){
+  main{padding:12px 16px 60px}
+  .weekbar h2{font-size:17px}
+  .hero{height:170px}
+}
+@media print{
+  .top,.toolbar,.weekbar .btn,.add-item,#toast,.no-print{display:none!important}
+  body{background:#fff;color:#000}
+  .panel{box-shadow:none;border:1px solid #ccc}
+  .shop-cols{columns:2}
+  .it-for{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">🥕</span>Meal Planner</div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="plan">Plan</button>
+      <button role="tab" data-tab="recipes">Recipes</button>
+      <button role="tab" data-tab="shop">Shopping list</button>
+      <button role="tab" data-tab="nutrition">Nutrition</button>
+      <button role="tab" data-tab="settings">Settings</button>
+    </nav>
+  </div>
+</header>
+<main id="app"></main>
+<div id="modal-root"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Utilities
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const round = (v, d = 0) => { const f = 10 ** d; return Math.round(v * f) / f; };
+const fmtInt = v => Math.round(v).toLocaleString();
+const MEALS = ['breakfast', 'lunch', 'dinner'];
+const MEAL_LABEL = {breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner'};
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('mp_' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) {
+    try { localStorage.setItem('mp_' + k, JSON.stringify(v)); return true; }
+    catch { toast('Could not save — browser storage is full or blocked.'); return false; }
+  }
+};
+
+let toastTimer;
+function toast(msg, ms = 2600) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function isoDate(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function mondayOf(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return isoDate(x); }
+function dateOf(wk, n = 0) { const [y, m, d] = wk.split('-').map(Number); return new Date(y, m - 1, d + n); }
+function shiftWeek(wk, n) { return isoDate(dateOf(wk, 7 * n)); }
+const fmtShort = d => d.toLocaleDateString(undefined, {day: 'numeric', month: 'short'});
+
+async function fetchText(url, {timeout = 15000, headers} = {}) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), timeout);
+  try {
+    const res = await fetch(url, {signal: ctl.signal, headers});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.text();
+  } finally { clearTimeout(t); }
+}
+async function fetchJSON(url, opts) { return JSON.parse(await fetchText(url, opts)); }
+
+function decodeHtml(s) {
+  if (!s || !/[<&]/.test(s)) return s || '';
+  return new DOMParser().parseFromString(String(s), 'text/html').documentElement.textContent || '';
+}
+
+/* =====================================================================
+   Ingredient nutrition database (per 100 g; approximate)
+   names ; kcal,protein,carbs,fat,fibre ; group ; unit weight (g) ; grams per cup ; aisle ; L = liquid
+   ===================================================================== */
+const NDB_SRC = `
+onion|brown onion|white onion|yellow onion;40,1.1,9.3,0.1,1.7;veg;150;160;pr
+red onion;40,1.1,9.3,0.1,1.7;veg;150;160;pr
+shallot|challot;72,2.5,17,0.1,3.2;veg;30;160;pr
+spring onion|scallion|green onion;32,1.8,7.3,0.2,2.6;veg;15;100;pr
+leek;61,1.5,14,0.3,1.8;veg;200;89;pr
+garlic|garlic clove;149,6.4,33,0.5,2.1;herb;5;136;pr
+ginger|fresh ginger|root ginger|ginger root|thumb-sized piece of ginger;80,1.8,18,0.8,2;herb;15;96;pr
+tomato|vine tomato|beef tomato|plum tomato|vine-ripened tomato;18,0.9,3.9,0.2,1.2;veg;120;180;pr
+cherry tomato|grape tomato|baby plum tomato;18,0.9,3.9,0.2,1.2;veg;15;150;pr
+sun-dried tomato|sun dried tomato|sundried tomato;213,5,24,14,6;veg;5;55;pa
+chopped tomatoes|tinned tomatoes|canned tomatoes|diced tomatoes|tinned chopped tomatoes|crushed tomatoes|whole peeled tomatoes|can tomatoes;21,1,4,0.1,1;veg;400;240;pa
+passata|tomato sauce|tomato passata|marinara sauce|pasta sauce;29,1.4,5,0.2,1.5;veg;500;245;pa;L
+tomato puree|tomato paste|tomato purée;82,4.3,19,0.5,4.1;veg;15;260;pa
+potato|new potato|baby potato|white potato|russet potato|maris piper|baking potato|floury potato|waxy potato|jacket potato;77,2,17,0.1,2.2;starch;200;150;pr
+sweet potato;86,1.6,20,0.1,3;veg;200;133;pr
+carrot;41,0.9,9.6,0.2,2.8;veg;70;128;pr
+celery|celery stick|celery stalk;16,0.7,3,0.2,1.6;veg;40;101;pr
+bell pepper|red pepper|green pepper|yellow pepper|orange pepper|capsicum|red bell pepper|green bell pepper|sweet pepper|roasted red pepper;31,1,6,0.3,2.1;veg;150;150;pr
+chilli|chili|chile|jalapeno|jalapeño|green chilli|red chilli|green chili|red chili|bird's eye chilli|scotch bonnet|chillies|chilies;40,1.9,9,0.4,1.5;veg;15;100;pr
+broccoli|tenderstem broccoli|broccolini|broccoli florets;34,2.8,7,0.4,2.6;veg;300;91;pr
+cauliflower;25,1.9,5,0.3,2;veg;500;107;pr
+spinach|baby spinach;23,2.9,3.6,0.4,2.2;veg;30;30;pr
+kale|cavolo nero|chard|swiss chard|collard greens|spring greens|callaloo|morning glory;49,4.3,9,0.9,3.6;veg;30;67;pr
+lettuce|romaine|romaine lettuce|little gem|iceberg lettuce|salad leaves|mixed salad|mixed greens|salad greens|rocket|arugula|watercress|lamb's lettuce|salad;15,1.4,2.9,0.2,1.3;veg;300;47;pr
+cucumber;15,0.7,3.6,0.1,0.5;veg;300;120;pr
+courgette|zucchini;17,1.2,3.1,0.3,1;veg;200;124;pr
+aubergine|eggplant;25,1,6,0.2,3;veg;300;82;pr
+mushroom|button mushroom|chestnut mushroom|portobello mushroom|shiitake mushroom|mixed mushrooms|cremini mushroom;22,3.1,3.3,0.3,1;veg;20;70;pr
+peas|garden peas|frozen peas|petit pois|green peas;81,5.4,14,0.4,5.1;veg;5;145;fz
+green beans|french beans|runner beans|string beans|fine beans|sugar snap peas|mangetout|snow peas;31,1.8,7,0.2,2.7;veg;10;110;pr
+mixed vegetables|frozen vegetables|stir-fry vegetables|stir fry vegetables|vegetables|mixed veg|frozen mixed vegetables;50,2.5,9,0.4,3.5;veg;100;140;fz
+sweetcorn|sweet corn|corn|corn kernels|corn on the cob;86,3.3,19,1.4,2.7;veg;150;165;pa
+cabbage|white cabbage|savoy cabbage|red cabbage|coleslaw mix|napa cabbage;25,1.3,5.8,0.1,2.5;veg;900;89;pr
+asparagus;20,2.2,3.9,0.1,2.1;veg;20;134;pr
+avocado;160,2,8.5,14.7,6.7;fruit;170;150;pr
+beetroot|beet|beets;43,1.6,10,0.2,2.8;veg;100;136;pr
+butternut squash|squash|pumpkin;45,1,12,0.1,2;veg;1000;140;pr
+pak choi|bok choy|bok choi|pak choy;13,1.5,2.2,0.2,1;veg;150;70;pr
+brussels sprouts|brussels sprout|sprouts;43,3.4,9,0.3,3.8;veg;15;88;pr
+bean sprouts|beansprouts;30,3,6,0.2,1.8;veg;10;104;pr
+fennel|fennel bulb;31,1.2,7.3,0.2,3.1;veg;250;87;pr
+sauerkraut|kimchi;19,1,4,0.1,2.9;veg;100;140;pa
+celeriac|celery root;42,1.5,9,0.3,1.8;veg;600;156;pr
+rhubarb;21,0.9,4.5,0.2,1.8;fruit;80;122;pr
+plantain|green plantain|breadfruit|cassava|yuca|yam|taro;122,1.3,32,0.4,2.3;starch;250;150;pr
+radish;16,0.7,3.4,0.1,1.6;veg;10;116;pr
+parsnip;75,1.2,18,0.3,4.9;veg;150;133;pr
+turnip|swede|rutabaga;28,0.9,6.4,0.1,1.8;veg;150;130;pr
+okra;33,1.9,7,0.2,3.2;veg;10;100;pr
+water chestnuts|bamboo shoots;50,1.5,11,0.1,2.5;veg;10;140;pa
+artichoke|artichoke hearts;47,3.3,10.5,0.2,5.4;veg;30;168;pa
+olives|black olives|green olives|kalamata olives|pitted olives;115,0.8,6,11,3.2;fat;4;135;pa
+capers;23,2.4,4.9,0.9,3.2;cond;1;136;sp
+gherkin|pickles|cornichons|pickled onions;12,0.5,2.3,0.2,1.2;cond;30;143;pa
+parsley|flat-leaf parsley|flat leaf parsley|coriander|cilantro|basil|mint|dill|chives|fresh herbs|fresh coriander|coriander leaves|tarragon|sage|basil leaves|mint leaves;36,3,6,0.8,3.3;herb;5;16;pr
+thyme|fresh thyme|rosemary|fresh rosemary|thyme sprigs;101,5.6,24,1.7,14;herb;1;16;pr
+lemon|lemon juice|lemon zest|juice of 1 lemon|unwaxed lemon;29,1.1,9,0.3,2.8;cond;60;244;pr
+lime|lime juice|lime zest|juice of 1 lime;30,0.7,10.5,0.2,2.8;cond;45;244;pr
+apple|green apple|granny smith|cooking apple|bramley apple|red apple|eating apple;52,0.3,14,0.2,2.4;fruit;180;125;pr
+banana;89,1.1,23,0.3,2.6;fruit;120;150;pr
+blueberries|blueberry|raspberries|raspberry|strawberries|strawberry|blackberries|blackberry|mixed berries|berries|frozen berries|cherries|cherry|cranberries;50,0.8,12,0.4,3.5;fruit;10;145;pr
+orange|clementine|satsuma|mandarin|tangerine;47,0.9,12,0.1,2.4;fruit;150;180;pr
+orange juice;45,0.7,10,0.2,0.2;drink;250;248;dr;L
+apple juice;46,0.1,11,0.1,0.2;drink;250;248;dr;L
+mango|mango chunks;60,0.8,15,0.4,1.6;fruit;300;165;pr
+pineapple|pineapple chunks;50,0.5,13,0.1,1.4;fruit;900;165;pr
+pear;57,0.4,15,0.1,3.1;fruit;180;140;pr
+peach|nectarine|apricot|plum|fig;42,0.9,10,0.3,1.6;fruit;150;155;pr
+grapes|grape;69,0.7,18,0.2,0.9;fruit;5;151;pr
+kiwi|kiwi fruit|kiwifruit;61,1.1,15,0.5,3;fruit;75;180;pr
+melon|watermelon|cantaloupe|honeydew melon;34,0.8,8,0.2,0.9;fruit;1000;160;pr
+pomegranate|pomegranate seeds;83,1.7,19,1.2,4;fruit;250;174;pr
+raisins|sultanas|currants|dried fruit|dates|medjool dates|dried apricots|dried cranberries|prunes|dried figs;299,3,79,0.5,3.7;fruit;8;145;pa
+coconut milk|coconut cream|light coconut milk|reduced fat coconut milk;197,2,2.8,21,0;fat;400;240;pa;L
+desiccated coconut|shredded coconut|coconut flakes|coconut;660,6.9,24,64,16;fat;5;80;pa
+rice|white rice|basmati rice|jasmine rice|long grain rice|long-grain rice|arborio rice|risotto rice|sushi rice|paella rice|wild rice|cooked rice;360,7,79,0.6,1.3;grain;75;185;pa
+brown rice|wholegrain rice|brown basmati rice;362,7.5,76,2.7,3.4;wgrain;75;185;pa
+pasta|spaghetti|penne|fusilli|linguine|macaroni|tagliatelle|fettuccine|rigatoni|farfalle|orzo|conchiglie|pappardelle|tortellini|ravioli|bucatini|paccheri|spaghettini|vermicelli pasta;371,13,75,1.5,3.2;grain;100;100;pa
+lasagne sheets|lasagna sheets|lasagna noodles|lasagne|lasagna;371,13,75,1.5,3.2;grain;20;100;pa
+gnocchi;133,3.3,28,0.3,1.5;grain;500;150;pa
+wholewheat pasta|whole wheat pasta|wholemeal pasta|wholewheat spaghetti|whole wheat spaghetti|wholemeal spaghetti|whole wheat penne|wholewheat penne|wholewheat fusilli;348,14,73,1.4,9;wgrain;100;100;pa
+noodles|egg noodles|ramen noodles|udon noodles|soba noodles|lo mein noodles|chow mein noodles|dried egg noodles|medium egg noodles;384,14,71,4.4,3.3;grain;75;100;pa
+rice noodles|vermicelli|rice vermicelli|glass noodles|pad thai noodles|flat rice noodles;364,6,80,0.6,1.6;grain;75;100;pa
+couscous|giant couscous|wholewheat couscous;376,12.8,77,0.6,5;grain;75;173;pa
+quinoa;368,14,64,6,7;wgrain;75;170;pa
+bulgur|bulgur wheat|bulghur|buckwheat|freekeh|pearl barley|barley|farro|spelt;342,12,72,1.5,12;wgrain;75;180;pa
+oats|rolled oats|porridge oats|oatmeal|steel cut oats|jumbo oats|quick oats|old-fashioned oats;389,16.9,66,6.9,10.6;wgrain;40;90;pa
+granola|muesli;450,10,64,17,7;wgrain;45;120;pa
+flour|plain flour|all-purpose flour|all purpose flour|self-raising flour|self raising flour|self-rising flour|bread flour|strong white flour|00 flour|strong flour;364,10,76,1,2.7;grain;100;125;pa
+wholemeal flour|whole wheat flour|wholewheat flour;340,13,72,2.5,10.7;wgrain;100;120;pa
+cornflour|cornstarch|corn starch|arrowroot|starch|potato starch|tapioca|tapioca starch;381,0.3,91,0.1,0.9;grain;10;128;pa
+polenta|cornmeal|semolina|farine;370,8.5,79,1.8,7.3;grain;100;160;pa
+bread|white bread|baguette|ciabatta|sourdough|sourdough bread|toast|crusty bread|focaccia|brioche|bread slices;265,9,49,3.2,2.7;grain;35;45;bk
+wholemeal bread|whole wheat bread|wholegrain bread|whole grain bread|rye bread|granary bread|multigrain bread|seeded bread|wholemeal toast|wholegrain toast;247,13,41,3.4,7;wgrain;35;45;bk
+tortilla|wrap|flour tortilla|corn tortilla|flatbread|pitta|pitta bread|pita|pita bread|naan|naan bread|chapati|taco shell|tortilla wrap;300,8,50,7,3;grain;60;60;bk
+wholemeal wrap|wholemeal tortilla|whole wheat tortilla|wholemeal pitta|wholewheat wrap|wholemeal flatbread;290,9,45,7,7;wgrain;60;60;bk
+bagel;257,10,50,1.5,2.2;grain;100;100;bk
+english muffin|crumpet;227,9,44,1.7,3.5;grain;60;60;bk
+burger bun|bun|bread roll|roll|brioche bun|hot dog bun|ciabatta roll;279,9,50,4,2.4;grain;60;60;bk
+breadcrumbs|panko|panko breadcrumbs|bread crumbs|dried breadcrumbs;395,13,72,5.3,4.5;grain;10;108;pa
+puff pastry|shortcrust pastry|pastry|filo pastry|phyllo|filo|ready-rolled puff pastry;450,6,40,30,1.5;grain;320;100;de
+pizza dough|pizza base;250,8,48,3,2;grain;250;100;bk
+crackers|crispbread|rice cakes|oatcakes;420,10,70,10,4;grain;10;60;pa
+tortilla chips|crisps|nachos|potato chips;500,7,63,24,4;grain;30;30;pa
+cereal|cornflakes|bran flakes|weetabix|shredded wheat|wheat biscuits;357,9,80,2,10;wgrain;20;30;pa
+chickpeas|chickpea|garbanzo beans|garbanzos;139,7,22,2.6,6.4;legume;400;165;pa
+lentils|red lentils|green lentils|brown lentils|puy lentils|yellow lentils|split peas|dal|dhal|split red lentils|beluga lentils;352,25,63,1,11;legume;75;192;pa
+black beans|black bean;132,8.9,24,0.5,8.7;legume;400;172;pa
+kidney beans|red kidney beans;127,8.7,23,0.5,6.4;legume;400;177;pa
+cannellini beans|white beans|haricot beans|navy beans|butter beans|lima beans|borlotti beans|pinto beans|beans|mixed beans|great northern beans|flageolet beans;125,8,22,0.5,6.5;legume;400;175;pa
+baked beans;94,5,15,0.4,4;legume;415;250;pa
+refried beans;90,5,14,1.2,5;legume;400;250;pa
+edamame|soya beans|soybeans|edamame beans;121,12,9,5,5;legume;10;155;fz
+tofu|firm tofu|silken tofu|extra firm tofu|smoked tofu|quorn|quorn mince|meat-free mince|soy mince|plant-based mince;76,8,1.9,4.8,0.3;legume;400;250;pr
+tempeh;192,20,7.6,11,0;legume;200;166;pr
+hummus|houmous|humus;166,7.9,14,9.6,6;legume;200;246;pr
+peanut butter|almond butter|nut butter|crunchy peanut butter|smooth peanut butter;588,25,20,50,6;nut;15;258;pa
+peanuts|peanut|almonds|almond|walnuts|walnut|cashews|cashew|cashew nuts|nuts|mixed nuts|pecans|pecan|hazelnuts|hazelnut|pine nuts|pistachios|pistachio|macadamia|flaked almonds|ground almonds|chopped nuts|roasted peanuts;600,20,20,52,8;nut;1;140;pa
+chia seeds|chia|flaxseed|flaxseeds|linseed|ground flaxseed|seeds|mixed seeds|sunflower seeds|pumpkin seeds|pepitas|sesame seeds|hemp seeds|toasted sesame seeds;520,19,30,38,25;nut;1;160;pa
+tahini;595,17,21,54,9;nut;15;240;pa
+peanut sauce|satay sauce;400,15,20,30,3;nut;15;250;sp
+almond milk|oat milk|soy milk|soya milk|coconut drink|plant milk|rice milk|unsweetened almond milk;35,1,4,1.5,0.4;dairy;250;240;de;L
+chicken breast|chicken breast fillet|chicken fillet|boneless chicken breast|skinless chicken breast|chicken tenders|chicken strips|cooked chicken|chicken mini fillets|cooked chicken breast;120,22.5,0,2.6,0;poultry;170;140;mf
+chicken thigh|boneless chicken thigh|chicken thigh fillet|chicken leg|chicken drumstick|chicken wing|boneless skinless chicken thigh;177,18,0,11,0;poultry;120;140;mf
+chicken|chicken pieces|chicken portions|meat;215,18.6,0,15,0;poultry;200;140;mf
+whole chicken|roasting chicken;215,18.6,0,15,0;poultry;1500;140;mf
+turkey|turkey mince|ground turkey|turkey breast|turkey slices|sliced turkey|turkey steak|turkey breast slices;150,19,0,8,0;poultry;100;225;mf
+duck|duck breast|duck leg;200,19,0,13,0;poultry;200;140;mf
+beef mince|ground beef|minced beef|mince|lean mince|lean beef mince|ground chuck|steak mince;250,17,0,20,0;red;125;225;mf
+beef|steak|sirloin|sirloin steak|ribeye|rib-eye steak|ribeye steak|rump steak|fillet steak|flank steak|skirt steak|stewing beef|braising steak|beef chuck|chuck steak|brisket|beef brisket|stewing steak|beef steak|minute steak|beef fillet|topside|beef shin|beef short ribs|oxtail|diced beef|frying steak;200,26,0,10,0;red;250;140;mf
+lamb|lamb mince|minced lamb|ground lamb|lamb shoulder|leg of lamb|lamb leg|lamb chop|lamb shank|lamb cutlet|diced lamb|lamb neck|goat|mutton|goat meat;282,17,0,23,0;red;150;225;mf
+pork|pork chop|pork loin|pork shoulder|pork belly|pork mince|ground pork|minced pork|pork tenderloin|pork fillet|pork steak|pork ribs|spare ribs|pulled pork|pork medallions|diced pork;242,17,0,19,0;red;200;225;mf
+veal;172,24,0,8,0;red;150;140;mf
+bacon|streaky bacon|back bacon|smoked bacon|bacon rasher|pancetta|lardons|bacon lardons|smoked streaky bacon;417,13,1.4,40,0;proc;25;140;mf
+ham|cooked ham|sliced ham|prosciutto|parma ham|serrano ham|gammon|gammon steak;145,21,1.5,6,0;proc;30;140;mf
+sausage|pork sausage|chipolata|italian sausage|bratwurst|frankfurter|hot dog|merguez|cumberland sausage;300,12,3,27,0;proc;65;140;mf
+chorizo|salami|pepperoni|nduja|cooking chorizo|black pudding|morcilla|kielbasa|jamón|jamon;455,24,2,38,0;proc;10;130;mf
+salmon|salmon fillet|salmon steak|fresh salmon|salmon side|skinless salmon fillet;208,20,0,13,0;fish;140;140;mf
+smoked salmon|lox|gravlax;117,18,0,4.3,0;fish;100;140;mf
+tuna|tinned tuna|canned tuna|tuna steak|tuna in spring water|tuna chunks;116,26,0,1,0;fish;145;140;pa
+cod|white fish|haddock|pollock|hake|tilapia|sea bass|seabass|basa|plaice|sole|halibut|monkfish|fish fillet|cod fillet|white fish fillet|snapper|bream|sea bream|swordfish|trout|cod loin|smoked haddock;90,19,0,1,0;fish;140;140;mf
+prawns|prawn|king prawns|king prawn|tiger prawns|shrimp|jumbo shrimp|cooked prawns|raw king prawns;99,24,0.2,0.3,0;fish;12;145;mf
+mackerel|smoked mackerel|sardines|sardine|anchovies|anchovy|anchovy fillet|herring|kippers;205,19,0,14,0;fish;100;140;mf
+mussels|clams|scallops|squid|calamari|crab|crab meat|lobster|octopus|seafood mix|mixed seafood;86,14,3,1.5,0;fish;20;140;mf
+fish sticks|fish fingers;220,12,20,10,1;fish;28;140;fz
+egg|large egg|free-range egg|hard-boiled egg|boiled egg|medium egg;143,12.6,0.7,9.5,0;egg;50;243;de
+egg yolk;322,16,3.6,27,0;egg;17;243;de
+egg white;52,11,0.7,0.2,0;egg;33;243;de
+milk|whole milk|semi-skimmed milk|skimmed milk|skim milk|full-fat milk|full fat milk|2% milk|low-fat milk|buttermilk|evaporated milk|warm milk;50,3.4,4.8,1.9,0;dairy;250;245;de;L
+butter|unsalted butter|salted butter|ghee|knob of butter;717,0.9,0.1,81,0;fat;113;227;de
+cream|double cream|heavy cream|single cream|whipping cream|light cream|thickened cream|heavy whipping cream|half and half;340,2.1,2.8,36,0;fat;250;238;de;L
+sour cream|soured cream|crème fraîche|creme fraiche|crème fraiche|half-fat crème fraîche;200,2.4,4.6,19,0;dairy;150;230;de
+yogurt|yoghurt|greek yogurt|greek yoghurt|greek-style yogurt|natural yogurt|natural yoghurt|plain yogurt|plain yoghurt|skyr|greek style yoghurt|low-fat yogurt|fat-free greek yogurt|0% greek yogurt;97,9,4,5,0;dairy;150;245;de
+cheese|cheddar|cheddar cheese|mature cheddar|sharp cheddar|grated cheese|shredded cheese|gruyere|gruyère|red leicester|monterey jack|monterey jack cheese|emmental|swiss cheese|colby|edam|gouda|mexican cheese|cheese slices|american cheese|jarlsberg|comte|grated cheddar;403,25,1.3,33,0;dairy;25;113;de
+parmesan|parmesan cheese|parmigiano|parmigiano reggiano|pecorino|grana padano|vegetarian hard cheese|pecorino romano;431,38,4,29,0;dairy;20;100;de
+mozzarella|mozzarella cheese|buffalo mozzarella|burrata|mozzarella ball|grated mozzarella;280,22,2.2,22,0;dairy;125;113;de
+feta|feta cheese|goat cheese|goats cheese|goat's cheese|halloumi|paneer|crumbled feta;264,15,3,21,0;dairy;200;150;de
+blue cheese|stilton|gorgonzola|brie|camembert;353,21,2,29,0;dairy;150;135;de
+cream cheese|soft cheese|mascarpone|philadelphia|light cream cheese;380,6,4,38,0;dairy;180;232;de
+ricotta|ricotta cheese|quark;174,11,3,13,0;dairy;250;246;de
+cottage cheese;98,11,3.4,4.3,0;dairy;250;226;de
+ice cream|vanilla ice cream;207,3.5,24,11,0.7;sugar;500;150;fz
+olive oil|extra virgin olive oil|extra-virgin olive oil|light olive oil;884,0,0,100,0;fat;15;216;pa;L
+oil|vegetable oil|sunflower oil|rapeseed oil|canola oil|cooking oil|groundnut oil|peanut oil|corn oil|frying oil;884,0,0,100,0;fat;15;216;pa;L
+sesame oil|toasted sesame oil;884,0,0,100,0;fat;15;216;pa;L
+coconut oil;862,0,0,100,0;fat;15;218;pa;L
+lard|shortening|vegetable shortening|suet|goose fat|duck fat|dripping;890,0,0,99,0;fat;15;205;pa
+cooking spray|oil spray|spray oil|low-calorie cooking spray;800,0,0,90,0;fat;1;216;pa
+mayonnaise|mayo|light mayonnaise;680,1,0.6,75,0;fat;15;220;sp
+pesto|basil pesto|green pesto|red pesto;450,5,6,45,1.5;fat;15;250;sp
+sugar|caster sugar|granulated sugar|white sugar|brown sugar|light brown sugar|dark brown sugar|soft brown sugar|muscovado sugar|demerara sugar|icing sugar|powdered sugar|confectioners sugar|coconut sugar|light muscovado sugar;387,0,100,0,0;sugar;4;200;pa
+honey|maple syrup|golden syrup|agave|agave syrup|agave nectar|syrup|date syrup|treacle|molasses|corn syrup|runny honey;304,0.3,82,0,0.2;sugar;21;340;pa;L
+jam|marmalade|jelly|fruit jam|preserves|raspberry jam|strawberry jam;250,0.4,63,0.1,1;sugar;15;320;pa
+chocolate|dark chocolate|milk chocolate|chocolate chips|white chocolate|chocolate chunks|dark chocolate chips;546,4.9,61,31,7;sugar;10;170;pa
+cocoa|cocoa powder|cacao|cacao powder;228,20,58,14,37;spice;5;86;pa
+dulce de leche|condensed milk|sweetened condensed milk|caramel;320,7,55,8,0;sugar;15;300;pa
+digestive biscuit|biscuits|graham crackers|cookies|marzipan|meringue;470,6,68,20,2;sugar;15;100;pa
+custard|ready-made custard;120,3,17,4,0;dairy;150;245;de
+nutella|chocolate spread|hazelnut spread;539,6,58,31,3.4;sugar;15;300;pa
+soy sauce|light soy sauce|dark soy sauce|tamari|low-sodium soy sauce|kecap manis|reduced-salt soy sauce;53,8,5,0.6,0.8;cond;15;255;sp;L
+fish sauce|thai fish sauce;35,5,3.6,0,0;cond;15;255;sp;L
+oyster sauce|hoisin sauce|hoisin|teriyaki sauce|sweet chilli sauce|sweet chili sauce|bbq sauce|barbecue sauce|ketchup|tomato ketchup|brown sauce|plum sauce|mango chutney|chutney|cranberry sauce;150,1.5,35,0.3,0.5;cond;15;270;sp
+tamarind|tamarind paste|tamarind pulp|horseradish|chimichurri|chimichurri sauce|barbeque sauce;120,1.5,25,2,2;cond;15;255;sp
+worcestershire sauce|hot sauce|hotsauce|tobasco|sriracha|tabasco|chilli sauce|chili sauce|harissa|harissa paste|chipotle paste|gochujang|chipotle in adobo|sambal oelek|chilli paste;60,1.5,10,1.5,1;cond;5;255;sp
+mustard|dijon mustard|wholegrain mustard|english mustard|yellow mustard|mustard powder|grain mustard;66,4,6,4,4;cond;5;250;sp
+vinegar|white wine vinegar|red wine vinegar|balsamic vinegar|cider vinegar|apple cider vinegar|rice vinegar|rice wine vinegar|sherry vinegar|malt vinegar|balsamic glaze|white vinegar;20,0,1,0,0;cond;15;240;sp;L
+curry paste|green curry paste|red curry paste|thai green curry paste|thai red curry paste|tikka paste|tikka masala paste|tikka curry paste|korma paste|tandoori paste|madras curry paste|massaman curry paste|miso|miso paste|white miso|spice paste|medium spice paste|curry sauce;120,3,10,8,3;cond;15;250;sp
+salsa|tomato salsa|fresh salsa;36,1.5,7,0.2,2;veg;15;260;sp
+stock|chicken stock|vegetable stock|beef stock|fish stock|lamb stock|broth|chicken broth|vegetable broth|beef broth|bone broth|stock pot|stock cube|chicken stock cube|vegetable stock cube|beef stock cube|bouillon|bouillon cube|vegetable bouillon|chicken bouillon|hot vegetable stock|hot chicken stock|low-sodium chicken broth;5,0.5,0.4,0.2,0;cond;10;240;pa;L
+gravy|gravy granules;80,2,12,3,0;cond;10;240;pa
+wine|red wine|white wine|dry white wine|rice wine|shaoxing wine|shaoxing rice wine|mirin|sake|sherry|dry sherry|marsala|port|beer|ale|stout|cider|vermouth|brandy|rum;85,0.1,3,0,0;drink;750;240;dr;L
+water|cold water|hot water|boiling water|warm water|ice|ice cubes;0,0,0,0,0;salt;0;240;pa;L
+salt|sea salt|kosher salt|table salt|flaky salt|sea salt flakes|salt and pepper|salt & pepper|pepper|black pepper|ground black pepper|freshly ground black pepper|white pepper|peppercorns|black peppercorns|seasoning;0,0,0,0,0;salt;0;100;sp
+cumin|ground cumin|cumin seeds|paprika|smoked paprika|sweet paprika|hot paprika|turmeric|ground turmeric|chilli powder|chili powder|chilli flakes|chili flakes|red pepper flakes|crushed red pepper|dried chilli flakes|crushed chillies|cinnamon|ground cinnamon|cinnamon stick|garam masala|curry powder|oregano|dried oregano|dried thyme|dried basil|dried parsley|dried rosemary|dried dill|mixed herbs|dried mixed herbs|italian seasoning|herbes de provence|coriander seeds|ground coriander|nutmeg|ground nutmeg|cayenne|cayenne pepper|bay leaf|bay leaves|cloves|ground cloves|cardamom|cardamom pods|star anise|five spice|chinese five spice|allspice|ground ginger|vanilla|vanilla extract|vanilla essence|vanilla pod|baking powder|baking soda|bicarbonate of soda|yeast|dried yeast|fast-action yeast|instant yeast|fennel seeds|mustard seeds|saffron|sumac|za'atar|cajun seasoning|fajita seasoning|taco seasoning|garlic powder|onion powder|garlic granules|celery salt|ras el hanout|fenugreek|marjoram|summer savoury|savory|bouquet garni|caraway|caraway seeds|cardomom|ground cardomom|ground clove|pul biber|sazon|curry leaves|kaffir lime leaves|lime leaves|lemongrass|lemon grass|galangal|gelatine|cream of tartar|stock powder|dried chilli|kashmiri chilli powder|tandoori masala|chaat masala|jerk seasoning|everything bagel seasoning;300,12,55,10,30;spice;2;100;sp
+protein powder|whey protein;380,75,8,5,2;dairy;30;100;pa
+`;
+
+const AISLES = [
+  ['pr', 'Produce', '🥦'], ['mf', 'Meat & fish', '🥩'], ['de', 'Dairy & eggs', '🧀'], ['bk', 'Bakery', '🍞'],
+  ['pa', 'Pantry', '🥫'], ['sp', 'Spices & condiments', '🧂'], ['fz', 'Frozen', '🧊'], ['dr', 'Drinks', '🧃'],
+  ['ot', 'Other food', '🛒'], ['hh', 'Household', '🧽'], ['pc', 'Personal care', '🧴'], ['bb', 'Baby', '🍼'],
+  ['pt', 'Pets', '🐾'], ['xx', 'Other (non-food)', '📦']
+];
+const AISLE = Object.fromEntries(AISLES.map(([k, n, i]) => [k, {name: n, icon: i}]));
+
+const NDB = [];
+const ALIASES = [];
+NDB_SRC.trim().split('\n').forEach(line => {
+  const [names, nums, grp, w, cup, aisle, flag] = line.split(';');
+  const [k, p, c, f, fb] = nums.split(',').map(Number);
+  const e = {names: names.split('|'), k, p, c, f, fb, grp, w: +w, cup: +cup, aisle, liquid: flag === 'L'};
+  NDB.push(e);
+  e.names.forEach(a => {
+    // tolerate singular/plural differences: "sesame seed" matches "sesame seeds" and vice versa
+    let base = a, suf = '(?:e?s)?';
+    if (/ies$/.test(a)) { base = a.slice(0, -3); suf = '(?:y|ies)'; }
+    else if (/oes$/.test(a)) base = a.slice(0, -2);
+    else if (/[^su]s$/.test(a)) base = a.slice(0, -1);
+    const esc_ = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    ALIASES.push({alias: a, e, stem: base.slice(0, Math.max(3, base.length - 2)), re: new RegExp('(?<![a-zÀ-ɏ])' + esc_ + suf + '(?![a-zÀ-ɏ])')});
+  });
+});
+ALIASES.sort((a, b) => b.alias.length - a.alias.length);
+
+const MATCH_CACHE = new Map();
+function matchEntry(name) {
+  if (!name) return null;
+  if (MATCH_CACHE.has(name)) return MATCH_CACHE.get(name);
+  let hit = null;
+  for (const a of ALIASES) {
+    // cheap pre-check on the alias stem before the regex
+    if (name.includes(a.stem) && a.re.test(name)) { hit = a; break; }
+  }
+  MATCH_CACHE.set(name, hit);
+  return hit;
+}
+
+/* =====================================================================
+   Ingredient line parsing
+   ===================================================================== */
+const FRAC = {'½': .5, '⅓': 1 / 3, '⅔': 2 / 3, '¼': .25, '¾': .75, '⅕': .2, '⅖': .4, '⅗': .6, '⅘': .8, '⅙': 1 / 6, '⅚': 5 / 6, '⅛': .125, '⅜': .375, '⅝': .625, '⅞': .875};
+const UNIT_ALIASES = {
+  g: 'g gr gram grams gm gms grms', kg: 'kg kgs kilo kilos kilogram kilograms', ml: 'ml mls millilitre millilitres milliliter milliliters',
+  cl: 'cl', dl: 'dl', l: 'l litre litres liter liters ltr', tsp: 'tsp tsps teaspoon teaspoons tspn tsp.', tbsp: 'tbsp tbsps tbs tbls tblsp tblspn tablespoon tablespoons tbl',
+  cup: 'cup cups', floz: 'fl oz|fl. oz|fluid ounce|fluid ounces', oz: 'oz ounce ounces', lb: 'lb lbs pound pounds',
+  pinch: 'pinch pinches', dash: 'dash dashes splash splashes drizzle drop drops', handful: 'handful handfuls', bunch: 'bunch bunches',
+  clove: 'clove cloves', can: 'can cans tin tins', jar: 'jar jars', pack: 'pack packs packet packets package packages bag bags pouch pouches tub tubs carton cartons',
+  slice: 'slice slices', sprig: 'sprig sprigs', stick: 'stick sticks stalk stalks', knob: 'knob knobs', head: 'head heads',
+  fillet: 'fillet fillets', rasher: 'rasher rashers', sheet: 'sheet sheets', leaf: 'leaf leaves', piece: 'piece pieces chunk'
+};
+const UNIT_MAP = {};
+Object.entries(UNIT_ALIASES).forEach(([u, s]) => (s.includes('|') ? s.split('|') : s.split(' ')).forEach(a => UNIT_MAP[a] = u));
+const UNIT_RE = new RegExp('^(' + Object.keys(UNIT_MAP).sort((a, b) => b.length - a.length).map(a => a.replace(/[.]/g, '\\.')).join('|') + ')(?![a-z])\\.?\\s*', 'i');
+const NUM = '(\\d+\\s+\\d+\\/\\d+|\\d+\\/\\d+|\\d+(?:[.,]\\d+)?)';
+const NUM_RE = new RegExp('^' + NUM + '(?:\\s*(?:-|–|—|to|or)\\s*' + NUM + ')?');
+const METRIC_PAREN = /^\(\s*(?:about\s+)?(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|oz)\b[^)]*\)\s*/i;
+const MASS_UNITS = {g: 1, kg: 1000, oz: 28.35, lb: 453.6};
+const VOL_UNITS = {ml: 1, cl: 10, dl: 100, l: 1000, floz: 29.6, tsp: 5, tbsp: 15, cup: 240};
+const UNIT_LABEL = {pinch: 'pinch', dash: 'dash', handful: 'handful', bunch: 'bunch', clove: 'clove', can: 'can', jar: 'jar', pack: 'pack', slice: 'slice', sprig: 'sprig', stick: 'stick', knob: 'knob', head: 'head', fillet: 'fillet', rasher: 'rasher', sheet: 'sheet', leaf: 'leaf', piece: 'piece'};
+
+function parseNum(t) {
+  t = t.trim().replace(',', '.'); let m;
+  if ((m = t.match(/^(\d+)\s+(\d+)\/(\d+)$/))) return +m[1] + m[2] / m[3];
+  if ((m = t.match(/^(\d+)\/(\d+)$/))) return m[1] / m[2];
+  return parseFloat(t);
+}
+
+function parseQU(str) {
+  let s = String(str).replace(/(\d)?\s*([½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/g, (m, d, f) => ' ' + String(round((d ? +d : 0) + FRAC[f], 3)) + ' ')
+    .replace(/⁄/g, '/').replace(/\s+/g, ' ').trim()
+    .replace(/^([-–•*·▢□☐]|\d+[.)](?=\s))\s*/, '')
+    .replace(/^(\d+(?:[.,]\d+)?)-(?=(ounce|oz|pound|lb|gram|g|kg|ml|litre|liter|inch|cm)\b)/i, '$1 ')
+    .replace(/^(about|approx\.?|approximately|around|roughly|scant|heaping|heaped|generous|a few|few)\s+/i, '');
+  let qty = null, unit = null, mult = 1, sz = 1, m;
+  if ((m = s.match(/^(\d+)\s*[x×]\s*(?=\d)/i))) { mult = +m[1]; s = s.slice(m[0].length); }
+  if ((m = s.match(NUM_RE))) {
+    const a = parseNum(m[1]), b = m[2] ? parseNum(m[2]) : null;
+    qty = b ? (a + b) / 2 : a; s = s.slice(m[0].length).trim();
+  } else if ((m = s.match(/^(an?|one)\s+/i))) { qty = 1; s = s.slice(m[0].length); }
+  if ((m = s.match(METRIC_PAREN)) && qty != null) {
+    // "1 (400g) can beans" → 400 g
+    qty *= parseNum(m[1]); unit = m[2].toLowerCase() === 'l' ? 'l' : m[2].toLowerCase(); s = s.slice(m[0].length);
+    s = s.replace(/^(cans?|tins?|jars?|packs?|packets?|bags?|tubs?|pouch(es)?)\s+(of\s+)?/i, '');
+  }
+  if ((m = s.match(/^(extra[- ]large|large|medium|small|big|whole|jumbo|thick|thin)\b\s*/i))) {
+    sz = /large|big|jumbo/i.test(m[1]) ? 1.3 : /small|thin/i.test(m[1]) ? 0.7 : 1; s = s.slice(m[0].length);
+  }
+  if (!unit && (m = s.match(UNIT_RE))) {
+    unit = UNIT_MAP[m[1].toLowerCase()] || UNIT_MAP[m[1].toLowerCase().replace(/\.$/, '')];
+    s = s.slice(m[0].length).trim();
+    let p;
+    if ((p = s.match(METRIC_PAREN)) && !(unit in MASS_UNITS)) {
+      // "2 cups (250g) flour" → prefer the metric amount
+      qty = (qty ?? 1) * parseNum(p[1]); unit = p[2].toLowerCase(); s = s.slice(p[0].length);
+    }
+  }
+  if (qty != null) qty *= mult;
+  s = s.replace(/^\.\s*/, '').replace(/^of\s+/i, '');
+  if (unit && (unit in MASS_UNITS || unit in VOL_UNITS)) s = s.replace(/^(tins?|cans?|jars?|packs?|packets?|bags?|tubs?|cartons?|bottles?|boxes|box|pots?|blocks?|pouch(es)?)\s+(of\s+)?/i, '');
+  return {qty, unit, sz, rest: s.trim()};
+}
+
+const PREP_RE = /\b(finely|roughly|coarsely|thinly|thickly|freshly|lightly|very|chopped|diced|minced|sliced|grated|crushed|peeled|deseeded|seeded|cored|trimmed|halved|quartered|cubed|shredded|julienned|torn|rinsed|drained|washed|beaten|whisked|melted|softened|cooled|room temperature|uncooked|fresh|large|medium|small|big|ripe|boneless|skinless|skin-on|bone-in|organic|free-range|about|approx|packed|good quality|good-quality|plus extra|to serve|for serving)\b/gi;
+function cleanName(n) {
+  let s = String(n).toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ');
+  s = s.split(/,|;| - | – /)[0];
+  s = s.replace(/\b(for|to)\s+(serve|serving|garnish|taste|decorate|dust|dusting|fry|frying|grease|greasing)\b.*$/, '')
+       .replace(/\b(optional|plus more|or more|or to taste|as needed|if needed)\b.*$/, '')
+       .replace(PREP_RE, ' ').replace(/[*_]/g, ' ').replace(/\s+/g, ' ').trim()
+       .replace(/^(of|and|a|the)\s+/, '').replace(/\s+(and|or|of)$/, '');
+  return s;
+}
+function singular(s) {
+  if (!s) return s;
+  const words = s.split(' '); let w = words.pop();
+  if (/(ss|us|is|ous)$/.test(w) || w.length < 4) { /* keep */ }
+  else if (/eaves$/.test(w)) w = w.replace(/eaves$/, 'eaf');
+  else if (/ies$/.test(w)) w = w.replace(/ies$/, 'y');
+  else if (/(oes|ches|shes|xes)$/.test(w)) w = w.replace(/es$/, '');
+  else if (/s$/.test(w)) w = w.slice(0, -1);
+  words.push(w); return words.join(' ');
+}
+
+function toGrams(qty, unit, sz, e) {
+  const uw = e ? e.w : 100, cup = e ? e.cup : 200;
+  const first = e ? e.names[0] : '';
+  if (qty == null) {
+    if (!unit) { if (!e) return 0; return e.grp === 'salt' ? 0 : e.grp === 'herb' ? 5 : (e.grp === 'spice' || e.grp === 'cond') ? 2 : uw * sz; }
+    qty = 1;
+  }
+  if (unit in MASS_UNITS) return qty * MASS_UNITS[unit];
+  if (unit in VOL_UNITS) return qty * VOL_UNITS[unit] * cup / 240;
+  switch (unit) {
+    case 'pinch': return qty * 0.4;
+    case 'dash': return qty * (e && e.grp === 'fat' ? 5 : 1);
+    case 'handful': return qty * 30;
+    case 'bunch': return qty * (e && e.grp === 'herb' ? 30 : Math.max(uw, 100));
+    case 'clove': return qty * (first === 'garlic' ? 5 : 0.2);
+    case 'can': return qty * (first === 'tuna' ? 145 : 400);
+    case 'jar': return qty * 300;
+    case 'pack': return qty * (e && e.w >= 150 ? e.w : 250);
+    case 'slice': return qty * (uw <= 60 ? uw : 30);
+    case 'sprig': return qty;
+    case 'stick': return qty * (first === 'butter' ? 113 : uw);
+    case 'knob': return qty * 15;
+    case 'head': return qty * (first === 'garlic' ? 50 : uw);
+    case 'rasher': return qty * 25;
+    case 'sheet': return qty * 20;
+    case 'leaf': return qty * 0.5;
+  }
+  return qty * uw * sz;
+}
+
+const PARSE_CACHE = new Map();
+function parseLine(line) {
+  let r = PARSE_CACHE.get(line);
+  if (r) return r;
+  const raw = String(line || '').trim();
+  if (!raw || /:\s*$/.test(raw) || /^(for the|to serve|for serving)\b/i.test(raw) && /:$/.test(raw)) {
+    r = {line: raw, key: null}; PARSE_CACHE.set(line, r); return r;
+  }
+  let {qty, unit, sz, rest} = parseQU(raw);
+  let mname = rest.toLowerCase().replace(/\([^)]*\)/g, ' ').split(/,|;/)[0].replace(/\s+/g, ' ').trim();
+  // "2 garlic cloves" / "cloves of garlic"
+  if (/\bgarlic\s+cloves?\b|^cloves?\s+(of\s+)?garlic\b/.test(mname)) {
+    mname = mname.replace(/\bgarlic\s+cloves?\b|^cloves?\s+(of\s+)?garlic\b/, 'garlic');
+    if (!unit) unit = 'clove';
+  }
+  // bare "peppers"/"2 pepper" means bell peppers; "pinch of pepper" / "pepper to taste" is seasoning
+  if (/^peppers?$/.test(mname) && qty != null && (!unit || unit === 'piece')) mname = 'bell pepper';
+  const hit = matchEntry(mname);
+  const e = hit ? hit.e : null;
+  if (e && hit.alias === 'garlic' && !unit && qty != null && qty < 15) unit = 'clove';
+  const name = cleanName(rest) || mname;
+  const key = hit ? singular(hit.alias) : singular(name);
+  r = {line: raw, qty, unit, sz, name, entry: e, alias: hit ? hit.alias : null, key, grams: toGrams(qty, unit, sz, e)};
+  PARSE_CACHE.set(line, r);
+  return r;
+}
+
+/* =====================================================================
+   Built-in recipes
+   [name, meals(b/l/d), category, cuisine, servings, tags, emoji, ingredients, steps]
+   ===================================================================== */
+const BUILTIN_SRC = [
+['Overnight Oats with Berries','b','Breakfast','American',2,'vegetarian,make-ahead','🥣',
+ '100g rolled oats|250ml milk|150g greek yogurt|1 tbsp chia seeds|1 tbsp honey|150g blueberries',
+ 'Stir the oats, milk, yogurt, chia seeds and honey together and divide between two jars.|Cover and refrigerate overnight, or for at least 4 hours.|Loosen with a splash of milk and top with the blueberries.'],
+['Veggie Scrambled Eggs on Toast','b','Breakfast','British',2,'vegetarian,quick','🍳',
+ '4 eggs|2 tbsp milk|1 tsp butter|50g baby spinach|8 cherry tomatoes|4 slices wholemeal bread|salt and pepper',
+ 'Whisk the eggs with the milk and a little seasoning.|Melt the butter in a non-stick pan, add the halved tomatoes and spinach and cook for 1 minute until wilted.|Pour in the eggs and stir gently over a low heat until just set.|Serve on hot toast.'],
+['Avocado Toast with Poached Egg','b','Breakfast','American',2,'vegetarian,quick','🥑',
+ '4 slices sourdough|1 avocado|2 eggs|1 tbsp lemon juice|1/2 tsp chilli flakes|salt and pepper',
+ 'Toast the bread. Mash the avocado with the lemon juice and season well.|Poach the eggs in barely simmering water for 3 minutes.|Spread the avocado on the toast, top with the eggs and a pinch of chilli flakes.'],
+['Banana Pancakes','b','Breakfast','American',4,'vegetarian','🥞',
+ '200g plain flour|2 tsp baking powder|1 tbsp caster sugar|2 eggs|300ml milk|2 bananas|1 tbsp butter|2 tbsp maple syrup',
+ 'Mix the flour, baking powder and sugar. Whisk in the eggs and milk to make a thick batter.|Mash one banana and fold it in; slice the other.|Cook ladlefuls in a lightly buttered pan for 2 minutes each side.|Serve with sliced banana and maple syrup.'],
+['Greek Yogurt Parfait','b','Breakfast','Greek',2,'vegetarian,quick,no-cook','🍓',
+ '300g greek yogurt|80g granola|150g mixed berries|1 tbsp honey|1 tbsp pumpkin seeds',
+ 'Layer yogurt, berries and granola in two glasses.|Finish with a drizzle of honey and the pumpkin seeds.'],
+['Spinach & Feta Omelette','b','Breakfast','Mediterranean',1,'vegetarian,quick,low-carb','🍳',
+ '3 eggs|40g spinach|30g feta|1 tsp olive oil|salt and pepper',
+ 'Beat the eggs with a little seasoning.|Heat the oil in a small frying pan, wilt the spinach, then pour in the eggs.|Cook until almost set, scatter over the feta, fold and serve.'],
+['Shakshuka','bl','Breakfast','Middle Eastern',4,'vegetarian','🍳',
+ '2 tbsp olive oil|1 onion|1 red pepper|3 cloves garlic|1 tsp ground cumin|1 tsp smoked paprika|2 x 400g tins chopped tomatoes|6 eggs|50g feta|1 handful parsley|4 slices wholemeal bread',
+ 'Soften the sliced onion and pepper in the oil for 8 minutes. Add the garlic and spices for 1 minute.|Add the tomatoes and simmer for 10 minutes until thickened. Season.|Make six hollows, crack in the eggs, cover and cook for 6–8 minutes until the whites are set.|Scatter with feta and parsley and serve with toast.'],
+['Peanut Butter Banana Smoothie','b','Breakfast','American',2,'vegetarian,quick,no-cook','🥤',
+ '2 bananas|2 tbsp peanut butter|400ml milk|40g rolled oats|1 tsp honey',
+ 'Blend everything until smooth. Add a few ice cubes if you like it colder.'],
+['Breakfast Burritos','b','Breakfast','Mexican',4,'vegetarian','🌯',
+ '6 eggs|4 tortillas|400g black beans|1 red pepper|80g cheddar|4 tbsp salsa|1 avocado|1 tbsp olive oil',
+ 'Fry the diced pepper in the oil for 5 minutes, add the drained beans and warm through.|Scramble the eggs in the same pan.|Fill warm tortillas with eggs, beans, cheese, salsa and sliced avocado, then roll up.'],
+['Apple Cinnamon Porridge','b','Breakfast','British',2,'vegetarian,quick','🥣',
+ '100g porridge oats|500ml milk|1 apple|1 tsp ground cinnamon|1 tbsp maple syrup|20g walnuts',
+ 'Simmer the oats and milk for 5 minutes, stirring, until creamy.|Stir in half the grated apple and the cinnamon.|Top with the rest of the apple, walnuts and maple syrup.'],
+['Full English Breakfast','b','Breakfast','British',2,'weekend','🍳',
+ '4 sausages|4 rashers bacon|4 eggs|415g baked beans|200g mushrooms|2 tomatoes|4 slices wholemeal bread|1 tbsp vegetable oil',
+ 'Grill the sausages for 15 minutes and the bacon for the last 5.|Fry the mushrooms and halved tomatoes in the oil.|Warm the beans, fry the eggs and serve with toast.'],
+['Mango Chia Pudding','b','Breakfast','Fusion',2,'vegan,make-ahead,no-cook','🥭',
+ '50g chia seeds|400ml almond milk|1 tbsp maple syrup|1 mango|1 tsp vanilla extract',
+ 'Whisk the chia seeds, almond milk, maple syrup and vanilla. Leave 10 minutes, whisk again.|Refrigerate overnight.|Top with diced mango.'],
+['Smoked Salmon Bagels','b','Breakfast','American',2,'quick','🥯',
+ '2 bagels|100g cream cheese|100g smoked salmon|1/2 cucumber|1/2 red onion|1 tsp capers|1 tsp lemon juice',
+ 'Toast the halved bagels.|Spread with cream cheese and top with smoked salmon, sliced cucumber, thinly sliced red onion and capers.|Finish with a squeeze of lemon and black pepper.'],
+['Huevos Rancheros','b','Breakfast','Mexican',2,'vegetarian','🍳',
+ '4 corn tortillas|4 eggs|200g black beans|200g passata|1 onion|1 green chilli|1 avocado|1 tbsp olive oil|1 handful coriander',
+ 'Soften the onion and chilli in the oil, add the passata and beans and simmer for 8 minutes.|Fry the eggs and warm the tortillas.|Top the tortillas with the bean sauce, eggs, avocado and coriander.'],
+['Green Smoothie Bowl','b','Breakfast','American',2,'vegan,quick,no-cook','🥝',
+ '2 bananas|60g spinach|150g mango|200ml almond milk|30g granola|1 tbsp chia seeds|100g blueberries',
+ 'Blend the bananas, spinach, mango and almond milk until thick.|Pour into bowls and top with granola, blueberries and chia seeds.'],
+['French Toast with Berries','b','Breakfast','French',2,'vegetarian,weekend','🍞',
+ '4 slices brioche|2 eggs|100ml milk|1 tsp ground cinnamon|1 tbsp butter|150g strawberries|1 tbsp maple syrup',
+ 'Whisk the eggs, milk and cinnamon in a shallow dish.|Soak the bread on both sides, then fry in butter for 2–3 minutes each side.|Serve with strawberries and maple syrup.'],
+['Cottage Cheese & Peach Toast','b','Breakfast','American',1,'vegetarian,quick,high-protein','🍑',
+ '2 slices rye bread|150g cottage cheese|1 peach|1 tsp honey|10g walnuts',
+ 'Toast the rye bread.|Top with cottage cheese, sliced peach, chopped walnuts and a drizzle of honey.'],
+['Bircher Muesli','b','Breakfast','Swiss',2,'vegetarian,make-ahead,no-cook','🍎',
+ '80g muesli|1 apple|200ml milk|150g natural yogurt|20g almonds|80g raspberries',
+ 'Mix the muesli with the milk and grated apple; soak overnight in the fridge.|Stir in the yogurt and top with raspberries and chopped almonds.'],
+['Veggie Egg Muffins','b','Breakfast','American',4,'vegetarian,make-ahead,low-carb','🧁',
+ '8 eggs|1 red pepper|80g spinach|4 spring onions|60g cheddar|salt and pepper',
+ 'Heat the oven to 190°C and grease a 12-hole muffin tin.|Divide the chopped pepper, spinach, spring onions and cheese between the holes.|Pour over the beaten, seasoned eggs and bake for 18–20 minutes.'],
+['Tofu Scramble','b','Breakfast','Vegan',2,'vegan,high-protein','🍳',
+ '300g firm tofu|1 tsp ground turmeric|1 tbsp olive oil|1 onion|1 red pepper|60g spinach|1 tbsp soy sauce|2 slices wholemeal bread',
+ 'Fry the onion and pepper in the oil for 5 minutes.|Crumble in the tofu with the turmeric and soy sauce; cook for 5 minutes.|Stir through the spinach and serve on toast.'],
+['Chicken Caesar Salad','l','Salad','American',2,'high-protein','🥗',
+ '2 chicken breasts|1 romaine lettuce|30g parmesan|2 slices bread|3 tbsp mayonnaise|1 tbsp lemon juice|1 tsp dijon mustard|1 clove garlic|1 tbsp olive oil',
+ 'Season and griddle the chicken for 6–7 minutes each side; slice.|Cube the bread, toss with the oil and bake at 200°C for 8 minutes to make croutons.|Mix the mayonnaise, lemon, mustard, grated garlic and half the parmesan for the dressing.|Toss the lettuce with the dressing, croutons and chicken; top with the remaining parmesan.'],
+['Red Lentil Soup','ld','Soup','Middle Eastern',4,'vegan,high-fibre,batch','🍲',
+ '1 tbsp olive oil|1 onion|2 carrots|2 celery sticks|2 cloves garlic|200g red lentils|1 tsp ground cumin|400g chopped tomatoes|1.2 l vegetable stock|1 tbsp lemon juice',
+ 'Soften the chopped onion, carrots and celery in the oil for 10 minutes.|Add the garlic and cumin for 1 minute, then the lentils, tomatoes and stock.|Simmer for 25 minutes until the lentils collapse. Blend partly, add lemon juice and season.'],
+['Tuna Niçoise Salad','l','Salad','French',2,'high-protein','🥗',
+ '160g tuna|300g new potatoes|150g green beans|2 eggs|8 cherry tomatoes|40g black olives|100g salad leaves|2 tbsp olive oil|1 tbsp red wine vinegar|1 tsp dijon mustard',
+ 'Boil the potatoes for 15 minutes, adding the beans for the last 4. Boil the eggs for 8 minutes.|Whisk the oil, vinegar and mustard.|Arrange the leaves, potatoes, beans, tomatoes, olives, halved eggs and tuna; drizzle with dressing.'],
+['Falafel Wraps','ld','Wrap','Middle Eastern',4,'vegetarian,high-fibre','🥙',
+ '400g chickpeas|1 onion|2 cloves garlic|1 handful parsley|1 tsp ground cumin|2 tbsp plain flour|3 tbsp olive oil|4 wholemeal wraps|150g hummus|1/2 cucumber|2 tomatoes|80g lettuce',
+ 'Blitz the drained chickpeas, onion, garlic, parsley, cumin and flour to a coarse paste.|Shape into 12 patties and fry in the oil for 3 minutes each side.|Spread wraps with hummus and fill with falafel, lettuce, cucumber and tomato.'],
+['Quinoa Buddha Bowl','l','Bowl','Fusion',2,'vegan,high-fibre','🥙',
+ '150g quinoa|1 sweet potato|200g chickpeas|80g kale|1 avocado|2 tbsp tahini|1 tbsp lemon juice|1 tbsp olive oil|1 tsp smoked paprika',
+ 'Roast the cubed sweet potato and chickpeas with the oil and paprika at 200°C for 25 minutes.|Cook the quinoa for 15 minutes; drain.|Massage the kale with a little lemon. Whisk the tahini with the rest of the lemon and water to loosen.|Assemble bowls and drizzle with the dressing.'],
+['Minestrone','ld','Soup','Italian',4,'vegetarian,high-fibre,batch','🍲',
+ '2 tbsp olive oil|1 onion|2 carrots|2 celery sticks|1 courgette|2 cloves garlic|400g chopped tomatoes|1 l vegetable stock|400g cannellini beans|100g pasta|100g spinach|30g parmesan',
+ 'Soften the chopped onion, carrot and celery in the oil for 10 minutes. Add the courgette and garlic.|Add the tomatoes, stock and beans; simmer 15 minutes.|Add the pasta and cook until tender, then stir in the spinach.|Serve with grated parmesan.'],
+['Chicken & Avocado Wraps','l','Wrap','American',2,'quick,high-protein','🌯',
+ '2 tortillas|1 cooked chicken breast|1 avocado|50g lettuce|1 tomato|30g cheddar|2 tbsp greek yogurt',
+ 'Slice the chicken, avocado and tomato.|Spread the wraps with yogurt, fill with everything and roll up tightly.'],
+['Greek Salad with Pitta','l','Salad','Greek',2,'vegetarian,quick','🥗',
+ '3 tomatoes|1 cucumber|1/2 red onion|1 green pepper|100g feta|50g kalamata olives|2 tbsp olive oil|1 tsp dried oregano|2 wholemeal pitta',
+ 'Chop the tomatoes, cucumber, pepper and onion into chunks.|Top with olives and a slab of feta, drizzle with oil and sprinkle with oregano.|Serve with warm pitta.'],
+['Roasted Red Pepper & Tomato Soup','l','Soup','Mediterranean',4,'vegan,batch','🍅',
+ '1 tbsp olive oil|1 onion|3 red peppers|2 cloves garlic|2 x 400g tins chopped tomatoes|750ml vegetable stock|1 tsp smoked paprika|4 slices wholemeal bread',
+ 'Roast the chopped peppers and onion with the oil at 200°C for 25 minutes.|Tip into a pan with the garlic, paprika, tomatoes and stock; simmer 10 minutes.|Blend until smooth, season and serve with bread.'],
+['Egg Fried Rice','ld','Rice','Chinese',2,'vegetarian,quick','🍚',
+ '200g rice|2 eggs|150g frozen peas|1 carrot|3 spring onions|2 tbsp soy sauce|1 tbsp sesame oil|1 clove garlic',
+ 'Cook the rice, spread out and cool (or use leftover rice).|Stir-fry the diced carrot and garlic in sesame oil for 2 minutes, add the peas and rice and fry for 3 minutes.|Push to one side, scramble the eggs, then toss everything with the soy sauce and spring onions.'],
+['Black Bean Quesadillas','l','Mexican','Mexican',2,'vegetarian,quick','🌮',
+ '4 tortillas|400g black beans|80g cheddar|100g sweetcorn|1 red pepper|1 tsp ground cumin|4 tbsp salsa|2 tbsp sour cream',
+ 'Roughly mash the beans with the cumin; mix in the sweetcorn and diced pepper.|Spread over two tortillas, scatter with cheese and top with the remaining tortillas.|Dry-fry for 2–3 minutes each side until crisp. Cut into wedges and serve with salsa and sour cream.'],
+['Salmon Poke Bowl','l','Bowl','Hawaiian',2,'high-protein','🍣',
+ '200g salmon fillet|150g sushi rice|1 avocado|1/2 cucumber|100g edamame|1 carrot|2 tbsp soy sauce|1 tsp sesame seeds|1 tsp rice vinegar',
+ 'Cook the rice and season with the rice vinegar.|Bake or pan-fry the salmon for 10 minutes and flake (or use sushi-grade raw salmon, diced).|Arrange rice, salmon, avocado, cucumber, edamame and grated carrot in bowls.|Drizzle with soy sauce and sprinkle with sesame seeds.'],
+['Turkey & Hummus Sandwich','l','Sandwich','British',1,'quick,high-protein','🥪',
+ '2 slices wholemeal bread|60g sliced turkey|2 tbsp hummus|20g spinach|1 tomato',
+ 'Spread the bread with hummus and layer with turkey, spinach and sliced tomato.'],
+['Pesto Pasta Salad','l','Salad','Italian',4,'vegetarian','🍝',
+ '300g fusilli|3 tbsp pesto|200g cherry tomatoes|125g mozzarella|50g rocket|30g pine nuts',
+ 'Cook the pasta, drain and cool under running water.|Toss with the pesto, halved tomatoes, torn mozzarella and rocket.|Top with toasted pine nuts.'],
+['Jacket Potato with Beans & Cheese','l','Potato','British',2,'vegetarian','🥔',
+ '2 large baking potatoes|415g baked beans|60g cheddar|1 tbsp butter|50g salad leaves',
+ 'Prick the potatoes and bake at 200°C for 1 hour (or microwave 10 minutes then bake 15).|Warm the beans.|Split the potatoes, add butter, beans and grated cheese. Serve with salad.'],
+['Vietnamese Chicken Noodle Salad','l','Salad','Vietnamese',2,'quick','🍜',
+ '150g rice noodles|1 chicken breast|1 carrot|1/2 cucumber|1 handful mint|1 handful coriander|2 tbsp fish sauce|2 tbsp lime juice|1 tsp sugar|1 red chilli|30g roasted peanuts',
+ 'Poach the chicken for 15 minutes; shred.|Soak the noodles in boiling water, then drain and rinse.|Mix the fish sauce, lime juice, sugar and chopped chilli.|Toss noodles with chicken, julienned carrot and cucumber, herbs and dressing; top with peanuts.'],
+['Butternut Squash Soup','ld','Soup','British',4,'vegetarian,batch','🎃',
+ '1 butternut squash|1 onion|2 cloves garlic|1 tbsp olive oil|1 l vegetable stock|100ml single cream|1/2 tsp ground nutmeg|4 slices wholemeal bread',
+ 'Soften the onion in the oil, add the garlic and the peeled, cubed squash.|Pour in the stock and simmer for 20 minutes until tender.|Blend with the nutmeg, stir in the cream and season. Serve with bread.'],
+['Lentil & Feta Salad','l','Salad','Mediterranean',2,'vegetarian,high-fibre','🥗',
+ '125g puy lentils|1/2 red onion|200g cherry tomatoes|100g feta|1 handful parsley|2 tbsp olive oil|1 tbsp balsamic vinegar|60g rocket',
+ 'Simmer the lentils for 20 minutes until tender; drain.|Toss the warm lentils with oil, vinegar and finely sliced onion.|Fold in tomatoes, parsley and rocket; crumble over the feta.'],
+['Spaghetti Bolognese','d','Pasta','Italian',4,'family,batch','🍝',
+ '400g spaghetti|500g beef mince|1 onion|1 carrot|1 celery stick|2 cloves garlic|400g chopped tomatoes|2 tbsp tomato puree|1 tbsp olive oil|1 tsp dried oregano|30g parmesan',
+ 'Soften the finely chopped onion, carrot and celery in the oil for 8 minutes. Add the garlic.|Brown the mince, then add the tomatoes, puree and oregano.|Simmer for 30 minutes, season.|Serve over the spaghetti with parmesan.'],
+['Chicken & Veg Stir-Fry','d','Stir-fry','Chinese',4,'quick,high-protein','🥢',
+ '500g chicken breast|1 red pepper|1 broccoli|1 carrot|3 spring onions|2 cloves garlic|1 tbsp ginger|3 tbsp soy sauce|1 tbsp honey|1 tbsp sesame oil|300g egg noodles',
+ 'Cook the noodles; drain.|Stir-fry the sliced chicken in sesame oil for 5 minutes.|Add the garlic, ginger and vegetables and stir-fry for 4 minutes.|Add the noodles, soy and honey and toss for 1 minute.'],
+['Chickpea & Spinach Curry','d','Curry','Indian',4,'vegan,high-fibre,batch','🍛',
+ '1 tbsp vegetable oil|1 onion|3 cloves garlic|1 tbsp ginger|2 tbsp curry paste|2 x 400g tins chickpeas|400g chopped tomatoes|400ml light coconut milk|200g spinach|300g brown basmati rice',
+ 'Soften the onion in the oil, add the garlic, ginger and curry paste for 2 minutes.|Add the chickpeas, tomatoes and coconut milk; simmer 15 minutes.|Stir through the spinach until wilted.|Serve with the rice.'],
+['Baked Salmon with Roast Veg','d','Fish','British',2,'high-protein,omega-3','🐟',
+ '2 salmon fillets|300g sweet potato|1 courgette|1 red pepper|1 red onion|2 tbsp olive oil|1 lemon|1 tsp mixed herbs',
+ 'Roast the chopped vegetables with the oil and herbs at 200°C for 20 minutes.|Add the salmon on top with lemon slices and roast for 12–15 minutes more.'],
+['Beef Tacos','d','Mexican','Mexican',4,'family','🌮',
+ '500g beef mince|8 corn tortillas|1 onion|2 tsp chilli powder|1 tsp ground cumin|100g lettuce|2 tomatoes|80g cheddar|4 tbsp sour cream|1 avocado',
+ 'Brown the mince with the onion, then add the spices and a splash of water; simmer 5 minutes.|Warm the tortillas.|Serve with shredded lettuce, diced tomato, cheese, sour cream and avocado.'],
+['Vegetable Lasagne','d','Pasta','Italian',6,'vegetarian,batch','🍝',
+ '12 lasagne sheets|2 courgettes|1 aubergine|2 red peppers|1 onion|2 cloves garlic|700g passata|500g ricotta|200g spinach|125g mozzarella|30g parmesan|2 tbsp olive oil',
+ 'Roast the chopped courgettes, aubergine, peppers and onion with the oil at 200°C for 25 minutes; stir into the passata with the garlic.|Wilt the spinach and mix with the ricotta.|Layer sauce, pasta and ricotta mix, finishing with sauce, torn mozzarella and parmesan.|Bake at 190°C for 40 minutes.'],
+['Thai Green Chicken Curry','d','Curry','Thai',4,'','🍛',
+ '500g chicken thighs|3 tbsp green curry paste|400ml coconut milk|200g green beans|1 red pepper|1 tbsp fish sauce|1 tsp sugar|1 handful basil|300g jasmine rice',
+ 'Fry the curry paste for 1 minute, add the sliced chicken and cook 3 minutes.|Pour in the coconut milk and simmer 10 minutes.|Add the beans and pepper for 5 minutes; season with fish sauce and sugar.|Stir in the basil and serve with rice.'],
+['Lemon Herb Chicken Traybake','d','Roast','Mediterranean',4,'high-protein','🍗',
+ '8 chicken thighs|800g new potatoes|2 lemons|4 cloves garlic|2 tbsp olive oil|2 sprigs rosemary|300g broccoli',
+ 'Toss the chicken and halved potatoes with oil, lemon juice, garlic and rosemary.|Roast at 200°C for 40 minutes, adding the broccoli for the last 10.'],
+['Three-Bean Chilli','d','Chilli','Mexican',4,'vegan,high-fibre,batch','🌶️',
+ '1 tbsp olive oil|1 onion|1 red pepper|2 cloves garlic|2 tsp chilli powder|1 tsp ground cumin|400g black beans|400g kidney beans|400g pinto beans|400g chopped tomatoes|200g sweetcorn|300g brown rice',
+ 'Soften the onion and pepper in the oil for 8 minutes; add the garlic and spices.|Add the drained beans, tomatoes and sweetcorn; simmer 25 minutes.|Serve with brown rice.'],
+['Crispy Fish Tacos','d','Mexican','Mexican',4,'omega-3','🌮',
+ '500g cod|8 tortillas|200g red cabbage|1 lime|4 tbsp greek yogurt|1 tsp chilli powder|1 avocado|1 handful coriander|1 tbsp olive oil',
+ 'Rub the fish with oil and chilli powder; grill or pan-fry for 6–8 minutes and flake.|Shred the cabbage and toss with half the lime juice.|Mix the yogurt with the rest of the lime.|Fill tortillas with fish, slaw, avocado, yogurt and coriander.'],
+['Mushroom Risotto','d','Rice','Italian',4,'vegetarian','🍄',
+ '300g arborio rice|400g chestnut mushrooms|1 onion|2 cloves garlic|1.2 l vegetable stock|125ml white wine|40g parmesan|30g butter|1 tbsp olive oil',
+ 'Fry the sliced mushrooms in the oil until golden; set aside.|Soften the onion and garlic in half the butter, add the rice and stir 1 minute. Add the wine.|Add hot stock a ladle at a time, stirring, for 18–20 minutes.|Stir in the mushrooms, parmesan and remaining butter.'],
+['Pork Chops with Apples & Greens','d','Pork','British',4,'','🥩',
+ '4 pork chops|2 apples|1 onion|200g green beans|600g new potatoes|1 tbsp butter|1 tbsp olive oil|1 tsp dijon mustard',
+ 'Boil the potatoes for 15 minutes; steam the beans for the last 4.|Fry the seasoned chops in the oil for 4–5 minutes each side; rest.|Fry the sliced apples and onion in the butter until golden, then stir in the mustard.|Serve the chops topped with apples, with potatoes and beans.'],
+["Shepherd's Pie",'d','Pie','British',6,'family,batch','🥧',
+ '500g lamb mince|1 onion|2 carrots|150g frozen peas|2 tbsp tomato puree|1 tbsp worcestershire sauce|400ml beef stock|1 kg potatoes|40g butter|100ml milk|50g cheddar',
+ 'Brown the mince, add the chopped onion and carrots and cook 5 minutes.|Add the puree, Worcestershire sauce and stock; simmer 20 minutes, adding the peas at the end.|Boil and mash the potatoes with the butter and milk.|Top the mince with mash and cheese and bake at 200°C for 25 minutes.'],
+['Teriyaki Tofu Rice Bowls','d','Bowl','Japanese',4,'vegan','🍱',
+ '400g firm tofu|300g brown rice|1 broccoli|1 carrot|3 tbsp soy sauce|1 tbsp honey|1 tbsp rice vinegar|1 tbsp ginger|1 tbsp cornflour|1 tsp sesame seeds|1 tbsp vegetable oil',
+ 'Cook the rice. Press and cube the tofu, toss in cornflour and fry in the oil until crisp.|Steam the broccoli and grate the carrot.|Simmer the soy, honey, vinegar and ginger for 1 minute; toss with the tofu.|Serve over rice with the vegetables and sesame seeds.'],
+['Garlic Prawn Linguine','d','Pasta','Italian',4,'quick','🍤',
+ '400g linguine|300g raw king prawns|3 cloves garlic|1 red chilli|200g cherry tomatoes|2 tbsp olive oil|1 lemon|60g rocket|1 handful parsley',
+ 'Cook the pasta.|Fry the garlic and chilli in the oil for 1 minute, add the tomatoes for 3 minutes, then the prawns until pink.|Toss with the pasta, lemon juice, rocket and parsley.'],
+['Stuffed Peppers','d','Vegetarian','Mexican',4,'vegetarian,high-fibre','🌶️',
+ '4 red peppers|150g quinoa|400g black beans|200g sweetcorn|1 onion|1 tsp ground cumin|400g chopped tomatoes|80g cheddar',
+ 'Cook the quinoa. Soften the onion, add cumin, tomatoes, beans and sweetcorn and simmer 5 minutes; mix with the quinoa.|Halve and deseed the peppers, fill with the mixture and top with cheese.|Bake at 190°C for 30 minutes.'],
+['Chicken Fajitas','d','Mexican','Mexican',4,'family,high-protein','🌯',
+ '500g chicken breast|3 peppers|1 red onion|2 tsp smoked paprika|1 tsp ground cumin|2 tbsp olive oil|8 tortillas|4 tbsp sour cream|4 tbsp salsa|1 lime',
+ 'Toss the sliced chicken, peppers and onion with the spices and oil.|Fry in a hot pan for 8–10 minutes until charred and cooked through; squeeze over the lime.|Serve in warm tortillas with sour cream and salsa.'],
+['Beef & Broccoli','d','Stir-fry','Chinese',4,'high-protein','🥦',
+ '500g beef steak|1 broccoli|3 tbsp soy sauce|1 tbsp oyster sauce|2 cloves garlic|1 tbsp ginger|1 tbsp cornflour|1 tbsp vegetable oil|300g jasmine rice',
+ 'Cook the rice. Slice the beef thinly and toss in the cornflour.|Stir-fry the beef in the oil for 2 minutes; remove.|Stir-fry the broccoli, garlic and ginger with a splash of water for 3 minutes.|Return the beef with the soy and oyster sauces and toss until glossy.'],
+['Sausage & Bean Casserole','d','Casserole','British',4,'family','🍲',
+ '8 sausages|400g cannellini beans|400g chopped tomatoes|1 onion|1 red pepper|2 cloves garlic|1 tsp smoked paprika|300ml chicken stock|4 slices crusty bread',
+ 'Brown the sausages; remove.|Soften the onion and pepper, add garlic and paprika.|Add the tomatoes, beans, stock and sausages and simmer 25 minutes.|Serve with crusty bread.'],
+['Spinach Dhal with Rice','d','Curry','Indian',4,'vegan,high-fibre,batch','🍛',
+ '300g red lentils|1 onion|3 cloves garlic|1 tbsp ginger|1 tsp ground turmeric|1 tsp ground cumin|1 tsp garam masala|400g chopped tomatoes|1 l water|1 tbsp vegetable oil|200g spinach|300g basmati rice',
+ 'Soften the onion in the oil, add the garlic, ginger and spices for 1 minute.|Add the lentils, tomatoes and water; simmer 25 minutes, stirring.|Stir in the spinach and season. Serve with rice.'],
+['Mediterranean Baked Cod','d','Fish','Mediterranean',4,'high-protein','🐟',
+ '4 cod fillets|400g cherry tomatoes|60g olives|1 red onion|2 cloves garlic|2 tbsp olive oil|1 tsp dried oregano|600g new potatoes|200g green beans',
+ 'Roast the halved potatoes with half the oil at 200°C for 20 minutes.|Add the tomatoes, olives, onion, garlic and oregano, nestle in the cod and drizzle with the rest of the oil.|Roast 12–15 minutes more. Serve with steamed green beans.'],
+['Turkey Meatballs & Wholewheat Spaghetti','d','Pasta','Italian',4,'high-protein','🍝',
+ '500g turkey mince|50g breadcrumbs|1 egg|30g parmesan|2 cloves garlic|700g passata|1 onion|1 tbsp olive oil|400g wholewheat spaghetti|1 handful basil',
+ 'Mix the mince, breadcrumbs, egg, half the parmesan and one garlic clove; roll into 20 balls.|Brown in the oil, then remove. Soften the onion and remaining garlic, add the passata and meatballs and simmer 15 minutes.|Serve over spaghetti with basil and the remaining parmesan.'],
+['Margherita Flatbread Pizza','ld','Pizza','Italian',2,'vegetarian,quick','🍕',
+ '2 flatbreads|150g passata|125g mozzarella|1 handful basil|1 tbsp olive oil|50g rocket',
+ 'Spread the flatbreads with passata and top with torn mozzarella.|Bake at 220°C for 8–10 minutes.|Top with basil, rocket and a drizzle of oil.'],
+['Chicken Tikka Masala','d','Curry','Indian',4,'family','🍛',
+ '600g chicken breast|150g natural yogurt|2 tbsp tikka paste|1 onion|3 cloves garlic|1 tbsp ginger|400g chopped tomatoes|150ml double cream|300g basmati rice|1 handful coriander|1 tbsp vegetable oil',
+ 'Marinate the cubed chicken in the yogurt and half the tikka paste for at least 30 minutes.|Grill or fry the chicken until charred.|Soften the onion, garlic and ginger in the oil, add the remaining paste and the tomatoes; simmer 10 minutes.|Add the chicken and cream and simmer 5 minutes. Serve with rice and coriander.'],
+['Halloumi & Chickpea Traybake','d','Traybake','Mediterranean',4,'vegetarian','🧀',
+ '250g halloumi|2 courgettes|2 red peppers|1 red onion|400g chickpeas|400g cherry tomatoes|2 tbsp olive oil|1 tsp smoked paprika|200g couscous',
+ 'Toss the chopped vegetables and chickpeas with the oil and paprika; roast at 200°C for 20 minutes.|Add the sliced halloumi and roast 15 minutes more.|Serve with couscous.'],
+['Steak with Sweet Potato Wedges','d','Beef','American',2,'high-protein','🥩',
+ '2 sirloin steaks|2 sweet potatoes|150g asparagus|1 tbsp olive oil|1 tbsp butter|1 clove garlic',
+ 'Roast the sweet potato wedges with half the oil at 210°C for 30 minutes.|Sear the seasoned steaks in a very hot pan, 2–3 minutes per side for medium-rare, basting with butter and garlic. Rest 5 minutes.|Griddle the asparagus and serve.'],
+['Vegetable Pad Thai','d','Noodles','Thai',2,'vegetarian','🍜',
+ '150g rice noodles|2 eggs|150g firm tofu|100g bean sprouts|1 carrot|3 spring onions|2 tbsp soy sauce|1 tbsp lime juice|1 tbsp brown sugar|30g peanuts|1 tbsp vegetable oil',
+ 'Soak the noodles in boiling water for 5 minutes; drain.|Fry the cubed tofu in the oil until golden, push aside and scramble the eggs.|Add the noodles, carrot, sprouts, soy, lime and sugar and toss for 2 minutes.|Serve with spring onions and crushed peanuts.']
+];
+
+function slug(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+const MEAL_CODE = {b: 'breakfast', l: 'lunch', d: 'dinner'};
+const BUILTINS = BUILTIN_SRC.map(([name, meals, category, cuisine, servings, tags, emoji, ings, steps]) => ({
+  id: 'b-' + slug(name), name, meals: meals.split('').map(c => MEAL_CODE[c]), category, cuisine, servings,
+  tags: tags ? tags.split(',') : [], emoji, ingredients: ings.split('|'), instructions: steps.split('|').join('\n'), source: 'builtin'
+}));
+
+/* =====================================================================
+   State
+   ===================================================================== */
+const DEFAULT_SETTINGS = {
+  people: 2, kcal: 2000, protein: 0, fibre: 30, theme: 'auto', hideStaples: true, hideChecked: false,
+  staples: ['water', 'salt', 'pepper', 'black pepper', 'ground black pepper', 'freshly ground black pepper', 'salt and pepper', 'sea salt', 'ice'].join('\n'),
+  proxies: ['https://api.allorigins.win/raw?url={url}', 'https://corsproxy.io/?url={url}', 'https://api.codetabs.com/v1/proxy/?quest={rawurl}'].join('\n'),
+  onlineTried: false,
+  rnd: {pool: 'all', preferFav: true, balanced: true, veg: false, noRepeat: true, online: true, meals: {breakfast: true, lunch: true, dinner: true}}
+};
+const savedSettings = LS.get('settings', {});
+const S = {
+  settings: {...DEFAULT_SETTINGS, ...savedSettings, rnd: {...DEFAULT_SETTINGS.rnd, ...(savedSettings.rnd || {}), meals: {...DEFAULT_SETTINGS.rnd.meals, ...((savedSettings.rnd || {}).meals || {})}}},
+  user: LS.get('user', []),
+  online: LS.get('online', []),
+  favs: new Set(LS.get('favs', [])),
+  plan: LS.get('plan', {}),
+  extras: LS.get('extras', []),
+  checked: LS.get('checked', {}),
+  week: mondayOf(new Date()),
+  tab: LS.get('tab', 'plan'),
+  ui: {q: '', meal: '', cat: '', src: '', fav: false, sort: 'name', limit: 60},
+  pick: null,
+  loadingOnline: false
+};
+const save = {
+  settings: () => LS.set('settings', S.settings), user: () => LS.set('user', S.user), online: () => LS.set('online', S.online),
+  favs: () => LS.set('favs', [...S.favs]), plan: () => LS.set('plan', S.plan), extras: () => LS.set('extras', S.extras), checked: () => LS.set('checked', S.checked)
+};
+
+let ALL = [], RMAP = new Map();
+function reindex() {
+  S.online.forEach(r => { if (!r.servingsSet) { r.servings = estimateServings(r); r.servingsSet = true; } });
+  ALL = [...BUILTINS, ...S.online, ...S.user];
+  RMAP = new Map(ALL.map(r => [r.id, r]));
+}
+const getRecipe = id => RMAP.get(id);
+
+/* =====================================================================
+   Nutrition estimation
+   ===================================================================== */
+// Deep-frying oil is mostly not eaten: count ~15% of large oil quantities.
+function effGrams(p) { const e = p.entry; return e && e.grp === 'fat' && e.liquid && p.grams > 200 ? p.grams * 0.15 : p.grams; }
+// TheMealDB gives no serving counts, so estimate them from total weight and energy.
+function estimateServings(r) {
+  let g = 0, kcal = 0;
+  for (const line of r.ingredients || []) {
+    const p = parseLine(line); if (!p.key) continue;
+    if (!p.entry) { g += 40; continue; }
+    if (p.entry.grp === 'salt') continue;
+    const w = effGrams(p); g += w; kcal += p.entry.k * w / 100;
+  }
+  const sweet = r.category === 'Dessert' || !(r.meals || []).length;
+  return Math.max(2, Math.min(12, Math.round(Math.max(g / 450, kcal / (sweet ? 350 : 750))) || 4));
+}
+const NUTR_CACHE = new Map();
+function nutr(r) {
+  const ck = r.id + '|' + (r._v || 0);
+  let n = NUTR_CACHE.get(ck);
+  if (n) return n;
+  const t = {kcal: 0, p: 0, c: 0, f: 0, fb: 0, veg: 0, sug: 0};
+  const g = {};
+  let matched = 0, counted = 0;
+  for (const line of r.ingredients || []) {
+    const p = parseLine(line);
+    if (!p.key) continue;
+    counted++;
+    if (!p.entry) continue;
+    matched++;
+    const e = p.entry, w = effGrams(p);
+    t.kcal += e.k * w / 100; t.p += e.p * w / 100; t.c += e.c * w / 100; t.f += e.f * w / 100; t.fb += e.fb * w / 100;
+    if (e.grp === 'veg' || e.grp === 'fruit') t.veg += w;
+    if (e.grp === 'sugar') t.sug += e.c * w / 100;
+    g[e.grp] = (g[e.grp] || 0) + w;
+  }
+  const s = Math.max(1, +r.servings || 4);
+  for (const k in t) t[k] /= s;
+  for (const k in g) g[k] /= s;
+  if (r.nutrition) for (const k of ['kcal', 'p', 'c', 'f', 'fb', 'sug']) if (r.nutrition[k] != null && !isNaN(r.nutrition[k])) t[k] = +r.nutrition[k];
+  n = {
+    ...t, groups: g, matched, counted, coverage: counted ? matched / counted : 0,
+    fish: (g.fish || 0) >= 40, red: (g.red || 0) >= 40, proc: (g.proc || 0) >= 20, poultry: (g.poultry || 0) >= 40,
+    legume: (g.legume || 0) >= 40, wgrain: (g.wgrain || 0) >= 25,
+    vegetarian: !((g.red || 0) + (g.proc || 0) + (g.poultry || 0) + (g.fish || 0) > 5) || (r.tags || []).includes('vegetarian') || (r.tags || []).includes('vegan'),
+    redg: (g.red || 0) + (g.proc || 0)
+  };
+  NUTR_CACHE.set(ck, n);
+  return n;
+}
+
+function targets() {
+  const st = S.settings;
+  return {kcal: +st.kcal || 2000, protein: +st.protein || Math.round((+st.kcal || 2000) * 0.15 / 4), fibre: +st.fibre || 30, veg: 400, sugar: 30, fatLo: 20, fatHi: 35, fish: 2, redMax: 500, legume: 2, wgrain: 7};
+}
+
+/* =====================================================================
+   Plan helpers
+   ===================================================================== */
+function getSlot(wk, d, m) { return S.plan[wk]?.[d]?.[m] || null; }
+function setSlot(wk, d, m, val) {
+  if (!S.plan[wk]) S.plan[wk] = {};
+  if (!S.plan[wk][d]) S.plan[wk][d] = {};
+  if (val) S.plan[wk][d][m] = val; else delete S.plan[wk][d][m];
+  save.plan();
+}
+function slotRecipe(slot) { return slot && slot.id && !slot.id.startsWith('__') ? getRecipe(slot.id) : null; }
+function eachSlot(fn) { for (let d = 0; d < 7; d++) for (const m of MEALS) fn(d, m); }
+function plannedCount(wk) { let n = 0; eachSlot((d, m) => { if (getSlot(wk, d, m)) n++; }); return n; }
+function isFav(id) { return S.favs.has(id); }
+function toggleFav(id) { if (S.favs.has(id)) S.favs.delete(id); else S.favs.add(id); save.favs(); }
+
+/* =====================================================================
+   Randomizer
+   ===================================================================== */
+function weekCounts(wk, skip) {
+  const used = new Map(), counts = {fish: 0, red: 0, legume: 0};
+  eachSlot((d, m) => {
+    if (skip && skip.has(d + m)) return;
+    const r = slotRecipe(getSlot(wk, d, m)); if (!r) return;
+    used.set(r.id, (used.get(r.id) || 0) + 1);
+    const n = nutr(r); if (n.fish) counts.fish++; if (n.red || n.proc) counts.red++; if (n.legume) counts.legume++;
+  });
+  return {used, counts};
+}
+function candidates(meal, used, counts, exclude) {
+  const o = S.settings.rnd;
+  let list = ALL.filter(r => (r.meals || []).includes(meal) && r.id !== exclude);
+  if (!o.online) list = list.filter(r => r.source !== 'mealdb');
+  if (o.pool === 'fav') list = list.filter(r => isFav(r.id));
+  else if (o.pool === 'mine') list = list.filter(r => isFav(r.id) || r.source === 'user');
+  if (o.veg) list = list.filter(r => nutr(r).vegetarian);
+  if (o.noRepeat) { const l2 = list.filter(r => !used.has(r.id)); if (l2.length) list = l2; }
+  return list.map(r => {
+    const n = nutr(r); let w = 1;
+    if (o.preferFav && isFav(r.id)) w *= 4;
+    if (o.balanced) {
+      w *= 0.6 + Math.min(n.fb, 15) / 10 + Math.min(n.veg, 300) / 200 + Math.min(n.p, 40) / 50;
+      if (n.coverage < 0.5) w *= 0.5;
+      if ((n.red || n.proc) && counts.red >= 2) w *= 0.15;
+      if (n.proc) w *= 0.5;
+      if (n.fish && counts.fish < 2 && meal !== 'breakfast') w *= 3;
+      if (n.legume && counts.legume < 3) w *= 1.6;
+      if (n.wgrain) w *= 1.3;
+      if (n.sug > 25) w *= 0.5;
+      if (meal !== 'breakfast' && n.kcal < 200) w *= 0.4;
+    }
+    if (used.has(r.id)) w *= 0.15;
+    return {r, w};
+  });
+}
+function weightedPick(c) {
+  const tot = c.reduce((s, x) => s + x.w, 0); if (!tot) return null;
+  let x = Math.random() * tot;
+  for (const it of c) { x -= it.w; if (x <= 0) return it.r; }
+  return c[c.length - 1].r;
+}
+function randomize(mode, only) {
+  const wk = S.week, o = S.settings.rnd;
+  let slots = [];
+  if (only) slots = [only];
+  else eachSlot((d, m) => {
+    if (o.meals[m] === false) return;
+    const s = getSlot(wk, d, m);
+    if (mode === 'empty' ? !s : !(s && s.locked)) slots.push({d, m});
+  });
+  if (!slots.length) { toast(mode === 'empty' ? 'No empty slots to fill.' : 'Every slot is locked.'); return; }
+  const skip = new Set(slots.map(s => s.d + s.m));
+  const {used, counts} = weekCounts(wk, skip);
+  let filled = 0, failed = 0;
+  // shuffle order so constraints (e.g. fish quota) don't always land on Monday
+  slots.sort(() => Math.random() - 0.5);
+  for (const {d, m} of slots) {
+    const cur = getSlot(wk, d, m);
+    const pick = weightedPick(candidates(m, used, counts, only ? cur?.id : null));
+    if (!pick) { failed++; continue; }
+    setSlot(wk, d, m, {id: pick.id, locked: false});
+    used.set(pick.id, (used.get(pick.id) || 0) + 1);
+    const n = nutr(pick); if (n.fish) counts.fish++; if (n.red || n.proc) counts.red++; if (n.legume) counts.legume++;
+    filled++;
+  }
+  if (failed && !filled) toast('No recipes match your randomizer options for those meals.');
+  else if (!only) toast(`🎲 Picked ${filled} meal${filled === 1 ? '' : 's'}` + (failed ? ` (${failed} slot${failed === 1 ? '' : 's'} had no matching recipe)` : ''));
+  render();
+}
+
+/* =====================================================================
+   Shopping list
+   ===================================================================== */
+function staplesSet() { return new Set(S.settings.staples.split('\n').map(s => s.trim().toLowerCase()).filter(Boolean)); }
+function guessAisle(name) {
+  if (/sauce|paste|spice|seasoning|powder|vinegar|ketchup|mustard|dressing/.test(name)) return 'sp';
+  if (/cheese|milk|yog|cream|butter|egg/.test(name)) return 'de';
+  if (/beef|pork|chicken|lamb|fish|prawn|sausage|bacon|turkey|meat|steak|salmon/.test(name)) return 'mf';
+  if (/bread|roll|bun|bagel|wrap|tortilla/.test(name)) return 'bk';
+  if (/frozen/.test(name)) return 'fz';
+  if (/leaf|leaves|herb|lettuce|fruit|berr|squash|bean sprout|fresh/.test(name)) return 'pr';
+  if (/tin|can|dried|rice|pasta|noodle|flour|sugar|oil/.test(name)) return 'pa';
+  return 'ot';
+}
+function shopQty(p, f) {
+  if (p.qty == null && !p.unit) return null;
+  const q = (p.qty ?? 1) * f, u = p.unit;
+  if (u in MASS_UNITS) return {cls: 'g', v: q * MASS_UNITS[u]};
+  if (u in VOL_UNITS) {
+    const ml = q * VOL_UNITS[u], e = p.entry;
+    if (e && !e.liquid && e.aisle !== 'sp' && !['spice', 'salt', 'cond'].includes(e.grp)) return {cls: 'g', v: ml * e.cup / 240};
+    return {cls: 'ml', v: ml};
+  }
+  if (!u) return {cls: 'n', v: q * (p.sz || 1)};
+  return {cls: 'u:' + u, v: q};
+}
+function fmtCount(v) {
+  const r = Math.ceil(v * 4 - 1e-6) / 4, w = Math.floor(r), fr = r - w;
+  const fs = {0: '', 0.25: '¼', 0.5: '½', 0.75: '¾'}[fr] ?? '';
+  return (w ? String(w) : '') + fs || '0';
+}
+function plural(u, v) { if (v <= 1) return u; if (/(ch|sh)$/.test(u)) return u + 'es'; if (u === 'leaf') return 'leaves'; return u + 's'; }
+function fmtQty(cls, v) {
+  if (cls === 'g') return v >= 1000 ? round(v / 1000, 2) + ' kg' : (v < 20 ? Math.max(1, Math.round(v)) : Math.round(v / 5) * 5) + ' g';
+  if (cls === 'ml') return v >= 1000 ? round(v / 1000, 2) + ' l' : v < 15 ? fmtCount(v / 5) + ' tsp' : v < 60 ? fmtCount(v / 15) + ' tbsp' : Math.round(v / 10) * 10 + ' ml';
+  if (cls === 'n') return fmtCount(v);
+  const u = cls.slice(2); return fmtCount(v) + ' ' + plural(UNIT_LABEL[u] || u, v);
+}
+function buildShopping(wk) {
+  const items = new Map(), people = Math.max(1, +S.settings.people || 1), staples = staplesSet();
+  eachSlot((d, m) => {
+    const r = slotRecipe(getSlot(wk, d, m)); if (!r) return;
+    const f = people / Math.max(1, +r.servings || 4);
+    for (const line of r.ingredients || []) {
+      const p = parseLine(line); if (!p.key) continue;
+      let it = items.get(p.key);
+      if (!it) {
+        it = {key: p.key, name: cap(p.alias || p.key), aisle: p.entry ? p.entry.aisle : guessAisle(p.key), parts: {}, recipes: new Set(), variants: new Set(),
+          staple: staples.has(p.key) || staples.has(p.name) || staples.has((p.alias || '').toLowerCase())};
+        items.set(p.key, it);
+      }
+      const q = shopQty(p, f);
+      if (q) it.parts[q.cls] = (it.parts[q.cls] || 0) + q.v;
+      it.recipes.add(r.name);
+      if (p.name) it.variants.add(p.name);
+    }
+  });
+  const list = [...items.values()];
+  list.forEach(it => {
+    const order = ['n', 'g', 'ml'];
+    it.qtyText = Object.keys(it.parts).sort((a, b) => (order.indexOf(a) + 9) % 9 - (order.indexOf(b) + 9) % 9).map(k => fmtQty(k, it.parts[k])).join(' + ');
+    const lower = it.name.toLowerCase();
+    it.variantText = [...it.variants].filter(v => v !== lower && singular(v) !== lower).slice(0, 3).join(', ');
+  });
+  return list;
+}
+
+/* =====================================================================
+   Online library (TheMealDB) & link import
+   ===================================================================== */
+const MDB_EMOJI = {Beef: '🥩', Chicken: '🍗', Seafood: '🐟', Vegetarian: '🥗', Vegan: '🥦', Pasta: '🍝', Breakfast: '🍳', Dessert: '🍰', Lamb: '🍖', Pork: '🥓', Side: '🥔', Starter: '🥟', Goat: '🍖', Miscellaneous: '🍲'};
+function mealsForCategory(cat) {
+  if (cat === 'Breakfast') return ['breakfast'];
+  if (cat === 'Dessert') return [];
+  if (cat === 'Side' || cat === 'Starter') return ['lunch'];
+  return ['lunch', 'dinner'];
+}
+function fromMealDB(m) {
+  const ings = [];
+  for (let i = 1; i <= 20; i++) {
+    const ing = (m['strIngredient' + i] || '').trim(), mea = (m['strMeasure' + i] || '').trim();
+    if (ing) ings.push((mea ? mea + ' ' : '') + ing);
+  }
+  const tags = (m.strTags || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (m.strCategory === 'Vegetarian' || m.strCategory === 'Vegan') tags.push(m.strCategory.toLowerCase());
+  return {
+    id: 'mdb-' + m.idMeal, name: (m.strMeal || '').trim(), meals: mealsForCategory(m.strCategory), category: m.strCategory || '', cuisine: m.strArea && m.strArea !== 'Unknown' ? m.strArea : '',
+    servings: 4, tags, emoji: MDB_EMOJI[m.strCategory] || '🍽️', image: m.strMealThumb || '', thumb: m.strMealThumb ? m.strMealThumb + '/small' : '',
+    url: m.strSource || ('https://www.themealdb.com/meal/' + m.idMeal), ingredients: ings, instructions: (m.strInstructions || '').replace(/\r/g, '').trim(), source: 'mealdb'
+  };
+}
+async function loadMealDB(silent) {
+  if (S.loadingOnline) return;
+  S.loadingOnline = true; render();
+  const got = new Map(S.online.map(r => [r.id, r]));
+  const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+  let errors = 0, i = 0;
+  const worker = async () => {
+    while (i < letters.length) {
+      const L = letters[i++];
+      try {
+        const j = await fetchJSON(`https://www.themealdb.com/api/json/v1/1/search.php?f=${L}`);
+        (j.meals || []).forEach(m => { const r = fromMealDB(m); got.set(r.id, r); });
+      } catch { errors++; }
+    }
+  };
+  await Promise.all([worker(), worker(), worker(), worker()]);
+  S.online = [...got.values()];
+  S.settings.onlineTried = true; save.settings();
+  save.online(); reindex(); S.loadingOnline = false;
+  if (errors === letters.length) { if (!silent) toast('Could not reach TheMealDB — check your internet connection.'); }
+  else toast(`🌐 Online library ready: ${S.online.length} recipes`);
+  render();
+}
+async function searchMealDB(q) {
+  const j = await fetchJSON('https://www.themealdb.com/api/json/v1/1/search.php?s=' + encodeURIComponent(q));
+  const found = (j.meals || []).map(fromMealDB);
+  const map = new Map(S.online.map(r => [r.id, r]));
+  let added = 0; found.forEach(r => { if (!map.has(r.id)) added++; map.set(r.id, r); });
+  S.online = [...map.values()]; save.online(); reindex();
+  return {found: found.length, added};
+}
+
+function findType(o, t, depth = 0) {
+  if (!o || depth > 8) return null;
+  if (Array.isArray(o)) { for (const x of o) { const r = findType(x, t, depth + 1); if (r) return r; } return null; }
+  if (typeof o !== 'object') return null;
+  const ty = o['@type'];
+  if (ty === t || (Array.isArray(ty) && ty.includes(t))) return o;
+  for (const k of Object.keys(o)) if (o[k] && typeof o[k] === 'object') { const r = findType(o[k], t, depth + 1); if (r) return r; }
+  return null;
+}
+const txt = h => decodeHtml(String(h ?? '')).replace(/\s+/g, ' ').trim();
+const arr = x => x == null ? [] : Array.isArray(x) ? x : [x];
+function flattenInstr(x) {
+  if (!x) return [];
+  if (typeof x === 'string') return decodeHtml(x.replace(/<\/(p|li|br)>|<br\s*\/?>/gi, '\n')).split(/\n+/).map(s => s.trim()).filter(Boolean);
+  if (Array.isArray(x)) return x.flatMap(flattenInstr);
+  if (x.itemListElement) return [...(x.name ? [txt(x.name) + ':'] : []), ...flattenInstr(x.itemListElement)];
+  if (x.text) return [txt(x.text)];
+  if (x.name) return [txt(x.name)];
+  return [];
+}
+function guessMeals(text) {
+  const t = (text || '').toLowerCase();
+  if (/breakfast|brunch|pancake|porridge|oatmeal|granola|omelet|smoothie|waffle|muffin/.test(t)) return /lunch|dinner|main/.test(t) ? ['breakfast', 'lunch'] : ['breakfast'];
+  if (/dessert|cake|cookie|biscuit|brownie|baking|sweet treat|pudding/.test(t) && !/main|dinner/.test(t)) return [];
+  return ['lunch', 'dinner'];
+}
+function isoMinutes(s) { const m = String(s || '').match(/PT(?:(\d+)H)?(?:(\d+)M)?/); return m ? (+m[1] || 0) * 60 + (+m[2] || 0) : null; }
+function numIn(s) { const m = String(s ?? '').match(/[\d.]+/); return m ? parseFloat(m[0]) : null; }
+function normLd(o, url) {
+  let img = o.image; if (Array.isArray(img)) img = img[0]; if (img && typeof img === 'object') img = img.url || img.contentUrl;
+  const yields = arr(o.recipeYield).map(String);
+  const servings = yields.map(numIn).find(n => n && n < 100) || 4;
+  const n = o.nutrition || {};
+  const nutrition = {kcal: numIn(n.calories), p: numIn(n.proteinContent), c: numIn(n.carbohydrateContent), f: numIn(n.fatContent), fb: numIn(n.fiberContent), sug: numIn(n.sugarContent)};
+  const hasN = Object.values(nutrition).some(v => v != null);
+  const category = arr(o.recipeCategory).map(txt).join(', ');
+  const cuisine = arr(o.recipeCuisine).map(txt).join(', ');
+  const keywords = typeof o.keywords === 'string' ? o.keywords : arr(o.keywords).join(', ');
+  return {
+    name: txt(o.name), ingredients: arr(o.recipeIngredient || o.ingredients).map(txt).filter(Boolean), instructions: flattenInstr(o.recipeInstructions).join('\n'),
+    image: typeof img === 'string' ? img : '', servings, category, cuisine, url, time: isoMinutes(o.totalTime || o.cookTime),
+    meals: guessMeals([category, keywords, o.name].join(' ')), nutrition: hasN ? nutrition : null
+  };
+}
+function fromDoc(doc, url) {
+  for (const s of doc.querySelectorAll('script[type="application/ld+json"]')) {
+    let data;
+    try { data = JSON.parse(s.textContent.trim()); } catch { try { data = JSON.parse(s.textContent.replace(/[\u0000-\u001f]+/g, ' ')); } catch { continue; } }
+    const r = findType(data, 'Recipe');
+    if (r) { const out = normLd(r, url); if (out.ingredients.length) return out; }
+  }
+  const meta = (p) => doc.querySelector(`meta[property="${p}"],meta[name="${p}"]`)?.getAttribute('content') || '';
+  const title = txt(meta('og:title') || doc.querySelector('h1')?.textContent || doc.title);
+  const image = meta('og:image');
+  // microdata
+  let ings = $$('[itemprop="recipeIngredient"],[itemprop="ingredients"]', doc).map(e => txt(e.textContent)).filter(Boolean);
+  let steps = $$('[itemprop="recipeInstructions"]', doc).map(e => txt(e.textContent)).filter(Boolean);
+  // class-name heuristic
+  if (!ings.length) {
+    ings = $$('[class*="ingredient" i] li, li[class*="ingredient" i]', doc).map(e => txt(e.textContent)).filter(s => s && s.length < 160);
+    ings = [...new Set(ings)];
+  }
+  if (!steps.length) steps = $$('[class*="instruction" i] li, [class*="direction" i] li, [class*="method" i] li, [class*="step" i] p', doc).map(e => txt(e.textContent)).filter(Boolean);
+  if (ings.length) return {name: title, ingredients: ings, instructions: [...new Set(steps)].join('\n'), image, servings: 4, url, meals: guessMeals(title), category: '', cuisine: ''};
+  // headings heuristic on the text
+  const lines = [];
+  $$('h1,h2,h3,h4,h5,h6,li,p', doc.body || doc).forEach(e => lines.push((/^H\d$/.test(e.tagName) ? '# ' : '') + txt(e.textContent)));
+  const t = fromText(lines.join('\n'), url);
+  if (t) { t.name = t.name || title; t.image = t.image || image; }
+  return t;
+}
+function fromText(text, url) {
+  const lines = String(text).replace(/\r/g, '').split('\n').map(s => s.trim());
+  let name = '';
+  const tl = lines.find(l => /^Title:\s*/.test(l)); if (tl) name = tl.replace(/^Title:\s*/, '');
+  if (!name) { const h = lines.find(l => /^#\s+/.test(l)); if (h) name = h.replace(/^#+\s*/, ''); }
+  const isHead = l => /^(#{1,6}\s*|\*\*)/.test(l) || (l.length < 40 && /:$/.test(l)) || /^[A-Z][A-Za-z ]{2,30}$/.test(l);
+  const ingHead = l => /^(#{1,6}\s*)?(\*\*)?\s*ingredients?\b/i.test(l) && l.length < 60;
+  const insHead = l => /^(#{1,6}\s*)?(\*\*)?\s*(method|instructions|directions|steps|preparation|how to make( it)?)\b/i.test(l) && l.length < 60;
+  const clean = l => l.replace(/^\s*([-*+•▢□☐]|\d+[.)])\s+/, '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`]/g, '').replace(/!\[.*$/, '').trim();
+  const ings = [], steps = [];
+  let i = lines.findIndex(ingHead);
+  if (i >= 0) {
+    for (let j = i + 1; j < lines.length; j++) {
+      const l = lines[j];
+      if (insHead(l)) break;
+      if (!l) continue;
+      if (/^#{1,6}\s/.test(l) && ings.length) { if (/for the|sauce|dressing|topping|marinade/i.test(l)) { ings.push(clean(l.replace(/^#+\s*/, '')) + ':'); continue; } break; }
+      const c = clean(l); if (c && c.length < 160 && !/^(ingredients?|metric|imperial|us customary|cups?|serves?.*)$/i.test(c)) ings.push(c);
+      if (ings.length > 60) break;
+    }
+  }
+  let k = lines.findIndex((l, idx) => idx > i && insHead(l));
+  if (k >= 0) {
+    for (let j = k + 1; j < lines.length; j++) {
+      const l = lines[j]; if (!l) continue;
+      if (/^#{1,6}\s/.test(l) && steps.length && /notes?|nutrition|tips|video|related|you may also/i.test(l)) break;
+      if (/^#{1,6}\s/.test(l) && steps.length > 2) break;
+      const c = clean(l); if (c) steps.push(c);
+      if (steps.length > 40) break;
+    }
+  }
+  if (!ings.length) return null;
+  return {name, ingredients: ings, instructions: steps.join('\n'), image: '', servings: 4, url, meals: guessMeals(name), category: '', cuisine: ''};
+}
+async function importFromUrl(url, onStatus) {
+  const attempts = [
+    {label: 'direct', url, kind: 'html'},
+    {label: 'reader (HTML)', url: 'https://r.jina.ai/' + url, kind: 'html', headers: {'X-Return-Format': 'html'}},
+    {label: 'reader (text)', url: 'https://r.jina.ai/' + url, kind: 'text'},
+    ...S.settings.proxies.split('\n').map(s => s.trim()).filter(Boolean).map(p => ({
+      label: p.replace(/^https?:\/\//, '').split(/[/?]/)[0], kind: 'html',
+      url: p.includes('{rawurl}') ? p.replace('{rawurl}', url) : p.includes('{url}') ? p.replace('{url}', encodeURIComponent(url)) : p + encodeURIComponent(url)
+    }))
+  ];
+  for (const a of attempts) {
+    onStatus(`Trying ${a.label}…`);
+    try {
+      const body = await fetchText(a.url, {timeout: a.label === 'direct' ? 6000 : 20000, headers: a.headers});
+      if (!body || body.length < 200) continue;
+      const looksHtml = /<html|<script|<body|<!doctype/i.test(body.slice(0, 5000)) || /<script[^>]+ld\+json/i.test(body);
+      const res = looksHtml ? fromDoc(new DOMParser().parseFromString(body, 'text/html'), url) : fromText(body, url);
+      if (res && res.ingredients.length >= 2) { res.url = url; return res; }
+    } catch { /* try next */ }
+  }
+  return null;
+}
+
+/* =====================================================================
+   Rendering — shell
+   ===================================================================== */
+const app = $('#app');
+function setTab(t) { S.tab = t; LS.set('tab', t); render(); window.scrollTo(0, 0); }
+function applyTheme() {
+  const t = S.settings.theme;
+  if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+}
+function render() {
+  $$('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === S.tab)));
+  const shopBtn = $('#tabs [data-tab="shop"]');
+  const open = buildShopping(S.week).filter(it => !(S.checked[S.week] || {})[it.key] && !(S.settings.hideStaples && it.staple)).length + S.extras.filter(x => !x.done).length;
+  shopBtn.innerHTML = 'Shopping list' + (open ? `<span class="tab-badge">${open}</span>` : '');
+  const fns = {plan: renderPlan, recipes: renderRecipes, shop: renderShop, nutrition: renderNutrition, settings: renderSettings};
+  (fns[S.tab] || renderPlan)();
+}
+function thumb(r, cls = '') {
+  const src = r.thumb || r.image;
+  return `<span class="thumb ${cls}" aria-hidden="true">${esc(r.emoji || '🍽️')}${src ? `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</span>`;
+}
+function weekBar() {
+  const start = dateOf(S.week), end = dateOf(S.week, 6), thisWeek = S.week === mondayOf(new Date());
+  return `<div class="weekbar">
+    <button class="btn sm" data-act="week" data-d="-1" aria-label="Previous week">‹</button>
+    <h2>${fmtShort(start)} – ${fmtShort(end)}${start.getFullYear() !== new Date().getFullYear() ? ' ' + start.getFullYear() : ''}</h2>
+    <button class="btn sm" data-act="week" data-d="1" aria-label="Next week">›</button>
+    ${thisWeek ? '<span class="pill">This week</span>' : '<button class="btn sm ghost" data-act="week" data-d="0">Jump to this week</button>'}
+  </div>`;
+}
+function nutLine(r) { const n = nutr(r); return `${fmtInt(n.kcal)} kcal · ${Math.round(n.p)} g protein · ${Math.round(n.fb)} g fibre`; }
+
+/* ---------- Plan ---------- */
+function renderPlan() {
+  const wk = S.week, o = S.settings.rnd, todayIdx = S.week === mondayOf(new Date()) ? (new Date().getDay() + 6) % 7 : -1;
+  let days = '';
+  for (let d = 0; d < 7; d++) {
+    const date = dateOf(wk, d);
+    let kcal = 0, any = false;
+    MEALS.forEach(m => { const r = slotRecipe(getSlot(wk, d, m)); if (r) { kcal += nutr(r).kcal; any = true; } });
+    days += `<section class="day ${d === todayIdx ? 'today' : ''}" aria-label="${DAY_NAMES[d]}">
+      <div class="day-head"><span class="day-name">${DAY_NAMES[d].slice(0, 3)} <span class="faint">${date.getDate()}</span></span>${any ? `<span class="day-kcal">${fmtInt(kcal)} kcal</span>` : ''}</div>
+      ${MEALS.map(m => slotHtml(d, m)).join('')}
+    </section>`;
+  }
+  const st = weekStats(wk);
+  const shopCount = buildShopping(wk).filter(it => !(S.settings.hideStaples && it.staple)).length;
+  app.innerHTML = `${weekBar()}
+  <div class="toolbar">
+    <button class="btn primary" data-act="rnd" data-mode="empty">🎲 Fill empty slots</button>
+    <button class="btn" data-act="rnd" data-mode="all" title="Re-pick every slot that isn't locked">🔄 Re-roll unlocked</button>
+    <details class="opts">
+      <summary class="btn">⚙ Randomizer options</summary>
+      <div class="opts-pop panel">
+        <fieldset><legend>Pick from</legend>
+          <label class="chk"><input type="radio" name="rpool" data-rnd="pool" value="all" ${o.pool === 'all' ? 'checked' : ''}> All recipes</label>
+          <label class="chk"><input type="radio" name="rpool" data-rnd="pool" value="mine" ${o.pool === 'mine' ? 'checked' : ''}> Favourites + my recipes</label>
+          <label class="chk"><input type="radio" name="rpool" data-rnd="pool" value="fav" ${o.pool === 'fav' ? 'checked' : ''}> Favourites only</label>
+          <label class="chk"><input type="checkbox" data-rnd="online" ${o.online ? 'checked' : ''}> Include online library</label>
+        </fieldset>
+        <fieldset><legend>Preferences</legend>
+          <label class="chk"><input type="checkbox" data-rnd="balanced" ${o.balanced ? 'checked' : ''}> Balance nutrition <span class="faint small">(fibre, veg, fish twice a week, limit red meat)</span></label>
+          <label class="chk"><input type="checkbox" data-rnd="preferFav" ${o.preferFav ? 'checked' : ''}> Favour my favourites</label>
+          <label class="chk"><input type="checkbox" data-rnd="noRepeat" ${o.noRepeat ? 'checked' : ''}> Avoid repeats within the week</label>
+          <label class="chk"><input type="checkbox" data-rnd="veg" ${o.veg ? 'checked' : ''}> Vegetarian only</label>
+        </fieldset>
+        <fieldset><legend>Meals to fill</legend>
+          <div class="row">${MEALS.map(m => `<label class="chk"><input type="checkbox" data-rnd-meal="${m}" ${o.meals[m] !== false ? 'checked' : ''}> ${MEAL_LABEL[m]}</label>`).join('')}</div>
+        </fieldset>
+      </div>
+    </details>
+    <span class="spacer"></span>
+    <button class="btn ghost" data-act="copy-last">Copy last week</button>
+    <button class="btn ghost danger" data-act="clear-week">Clear week</button>
+  </div>
+  <div class="week">${days}</div>
+  <div class="plan-summary">
+    <span class="pill"><b>${plannedCount(wk)}</b>/21 meals planned</span>
+    ${st.active ? `<span class="pill">≈ <b>${fmtInt(st.avg.kcal)}</b> kcal/day per person</span>
+    <span class="pill">Nutrition grade <b>${st.grade}</b></span>` : ''}
+    <button class="pill" style="border:0" data-act="tab" data-tab="shop">🛒 <b>${shopCount}</b> items on the shopping list →</button>
+    ${st.active ? `<button class="pill" style="border:0" data-act="tab" data-tab="nutrition">📊 Nutrition report →</button>` : ''}
+  </div>`;
+}
+function slotHtml(d, m) {
+  const s = getSlot(S.week, d, m), r = slotRecipe(s);
+  const lockBtn = `<button class="icon-btn" data-act="slot-lock" aria-pressed="${!!s?.locked}" title="${s?.locked ? 'Unlock' : 'Lock (keep when re-rolling)'}">${s?.locked ? '🔒' : '🔓'}</button>`;
+  let body;
+  if (!s) body = `<button class="slot-empty" data-act="slot-pick">+ Add</button>`;
+  else if (s.id === '__out') body = `<div class="slot-special">🍽️ Eating out</div>`;
+  else if (s.id === '__left') body = `<div class="slot-special">🥡 Leftovers</div>`;
+  else if (!r) body = `<div class="slot-special faint">Recipe no longer available</div>`;
+  else body = `<button class="slot-main" data-act="open" data-id="${esc(r.id)}">${thumb(r)}<span style="min-width:0"><span class="slot-name">${isFav(r.id) ? '<span class="fav-dot">★</span> ' : ''}${esc(r.name)}</span><span class="slot-meta">${fmtInt(nutr(r).kcal)} kcal · ${Math.round(nutr(r).p)} g protein</span></span></button>`;
+  return `<div class="slot ${s?.locked ? 'locked' : ''}" data-day="${d}" data-meal="${m}" ${r ? 'draggable="true"' : ''}>
+    <div class="slot-top"><span class="slot-label">${MEAL_LABEL[m]}</span>
+      <span class="slot-tools">
+        <button class="icon-btn" data-act="slot-rnd" title="Random ${MEAL_LABEL[m].toLowerCase()}">🎲</button>
+        ${s ? lockBtn + `<button class="icon-btn" data-act="slot-pick" title="Change">✎</button><button class="icon-btn" data-act="slot-clear" title="Remove">✕</button>` : ''}
+      </span></div>
+    ${body}
+  </div>`;
+}
+
+/* ---------- Picker ---------- */
+function openPicker(d, m) {
+  S.pick = {d, m, q: '', any: false, fav: false, limit: 120};
+  openModal(`<div class="modal-head"><h2>${MEAL_LABEL[m]} · ${DAY_NAMES[d]}</h2><button class="icon-btn close-x" data-act="close" aria-label="Close">✕</button></div>
+  <div class="modal-body">
+    <div class="pick-filters">
+      <input type="search" id="pick-q" placeholder="Search recipes or ingredients…" autocomplete="off">
+      <label class="chk small"><input type="checkbox" id="pick-fav"> Favourites</label>
+      <label class="chk small"><input type="checkbox" id="pick-any"> Show all meal types</label>
+    </div>
+    <div class="pick-quick">
+      <button class="btn sm" data-act="pick-random">🎲 Surprise me</button>
+      <button class="btn sm" data-act="pick-special" data-id="__left">🥡 Leftovers</button>
+      <button class="btn sm" data-act="pick-special" data-id="__out">🍽️ Eating out</button>
+    </div>
+    <div class="pick-list" id="pick-list"></div>
+  </div>`, {wide: false});
+  renderPickList();
+  setTimeout(() => $('#pick-q')?.focus(), 30);
+}
+function searchMatch(r, q) {
+  if (!q) return true;
+  const hay = (r._hay ||= (r.name + ' ' + (r.category || '') + ' ' + (r.cuisine || '') + ' ' + (r.tags || []).join(' ') + ' ' + (r.ingredients || []).join(' ')).toLowerCase());
+  return q.toLowerCase().split(/\s+/).every(w => hay.includes(w));
+}
+function renderPickList() {
+  const P = S.pick; if (!P) return;
+  let list = ALL.filter(r => (P.any || (r.meals || []).includes(P.m)) && (!P.fav || isFav(r.id)) && searchMatch(r, P.q));
+  list.sort((a, b) => (isFav(b.id) - isFav(a.id)) || (a.source === 'builtin' ? 0 : 1) - (b.source === 'builtin' ? 0 : 1) || a.name.localeCompare(b.name));
+  const total = list.length; list = list.slice(0, P.limit);
+  $('#pick-list').innerHTML = list.length ? list.map(r => `<button class="pick-row" data-act="pick" data-id="${esc(r.id)}">${thumb(r)}
+      <span style="min-width:0"><span class="nm">${isFav(r.id) ? '<span class="fav-dot">★</span> ' : ''}${esc(r.name)}</span><br><span class="sub">${esc([r.category, r.cuisine].filter(Boolean).join(' · '))}${nutr(r).vegetarian ? ' · 🌱' : ''}</span></span>
+      <span class="nums">${fmtInt(nutr(r).kcal)} kcal<br>${Math.round(nutr(r).p)} g P · ${Math.round(nutr(r).fb)} g fibre</span></button>`).join('')
+    + (total > list.length ? `<div class="more"><button class="btn sm" data-act="pick-more">Show more (${total - list.length})</button></div>` : '')
+    : `<div class="empty-state">No recipes match.${!P.any ? ' Try "Show all meal types".' : ''}</div>`;
+}
+
+/* ---------- Recipes ---------- */
+function renderRecipes() {
+  const U = S.ui;
+  const cats = [...new Set(ALL.map(r => r.category).filter(Boolean))].sort();
+  const counts = {builtin: BUILTINS.length, mealdb: S.online.length, user: S.user.length};
+  let list = ALL.filter(r => {
+    if (U.meal === 'other' ? (r.meals || []).length : U.meal && !(r.meals || []).includes(U.meal)) return false;
+    if (U.cat && r.category !== U.cat) return false;
+    if (U.src && r.source !== U.src) return false;
+    if (U.fav && !isFav(r.id)) return false;
+    return searchMatch(r, U.q);
+  });
+  const sorters = {
+    name: (a, b) => a.name.localeCompare(b.name), kcal: (a, b) => nutr(a).kcal - nutr(b).kcal, protein: (a, b) => nutr(b).p - nutr(a).p,
+    fibre: (a, b) => nutr(b).fb - nutr(a).fb, veg: (a, b) => nutr(b).veg - nutr(a).veg
+  };
+  list.sort(sorters[U.sort] || sorters.name);
+  const total = list.length; list = list.slice(0, U.limit);
+  app.innerHTML = `
+  <div class="toolbar">
+    <h2 style="margin-right:8px">Recipes</h2>
+    <button class="btn primary" data-act="new-recipe">+ Add recipe</button>
+    <button class="btn" data-act="new-recipe" data-import="1">🔗 Import from link</button>
+    <span class="spacer"></span>
+  </div>
+  <div class="lib-status">
+    <span class="pill"><b>${counts.builtin}</b> built-in</span>
+    <span class="pill"><b>${counts.mealdb}</b> online</span>
+    <span class="pill"><b>${counts.user}</b> mine</span>
+    <span class="pill"><b>${S.favs.size}</b> ★ favourites</span>
+    ${S.loadingOnline ? '<span class="pill"><span class="spin"></span> Loading online library…</span>'
+      : `<button class="btn sm" data-act="load-online">${S.online.length ? '↻ Refresh online library' : '🌐 Load online library (TheMealDB)'}</button>`}
+  </div>
+  <div class="filters">
+    <input type="search" id="lib-q" placeholder="Search name, ingredient, cuisine, tag…" value="${esc(U.q)}" autocomplete="off">
+    <select data-ui="meal" aria-label="Meal type"><option value="">All meals</option>${MEALS.map(m => `<option value="${m}" ${U.meal === m ? 'selected' : ''}>${MEAL_LABEL[m]}</option>`).join('')}<option value="other" ${U.meal === 'other' ? 'selected' : ''}>Desserts & other</option></select>
+    <select data-ui="cat" aria-label="Category"><option value="">All categories</option>${cats.map(c => `<option ${U.cat === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+    <select data-ui="src" aria-label="Source"><option value="">All sources</option><option value="builtin" ${U.src === 'builtin' ? 'selected' : ''}>Built-in</option><option value="mealdb" ${U.src === 'mealdb' ? 'selected' : ''}>Online (TheMealDB)</option><option value="user" ${U.src === 'user' ? 'selected' : ''}>My recipes</option></select>
+    <select data-ui="sort" aria-label="Sort"><option value="name">Sort: A–Z</option><option value="kcal" ${U.sort === 'kcal' ? 'selected' : ''}>Lowest calories</option><option value="protein" ${U.sort === 'protein' ? 'selected' : ''}>Most protein</option><option value="fibre" ${U.sort === 'fibre' ? 'selected' : ''}>Most fibre</option><option value="veg" ${U.sort === 'veg' ? 'selected' : ''}>Most veg</option></select>
+    <label class="chk"><input type="checkbox" data-ui="fav" ${U.fav ? 'checked' : ''}> ★ Favourites</label>
+  </div>
+  <div class="row small muted" style="margin-bottom:10px">${total} recipe${total === 1 ? '' : 's'}
+    ${U.q.length > 2 ? `<button class="btn sm ghost" data-act="search-online">🌐 Search TheMealDB for “${esc(U.q)}”</button>` : ''}</div>
+  <div class="cards">${list.map(cardHtml).join('') || '<div class="empty-state">No recipes match your filters.</div>'}</div>
+  ${total > list.length ? `<div class="more"><button class="btn" data-act="lib-more">Show more (${total - list.length})</button></div>` : ''}`;
+}
+function cardHtml(r) {
+  const src = r.thumb || r.image;
+  const srcLabel = {builtin: '', mealdb: 'Online', user: 'Mine'}[r.source];
+  return `<article class="card">
+    <button class="card-img" data-act="open" data-id="${esc(r.id)}" aria-label="Open ${esc(r.name)}">${esc(r.emoji || '🍽️')}${src ? `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}</button>
+    ${srcLabel ? `<span class="src-tag">${srcLabel}</span>` : ''}
+    <button class="star" data-act="fav" data-id="${esc(r.id)}" aria-pressed="${isFav(r.id)}" aria-label="Favourite">${isFav(r.id) ? '★' : '☆'}</button>
+    <div class="card-body">
+      <button class="card-title" data-act="open" data-id="${esc(r.id)}">${esc(r.name)}</button>
+      <div class="card-meta">${esc([(r.meals || []).map(m => MEAL_LABEL[m]).join(', ') || 'Dessert / other', r.cuisine].filter(Boolean).join(' · '))}${nutr(r).vegetarian ? ' · 🌱' : ''}</div>
+      <div class="card-nut">${nutLine(r)}</div>
+    </div>
+  </article>`;
+}
+
+/* ---------- Recipe detail ---------- */
+function openDetail(id) {
+  const r = getRecipe(id); if (!r) return;
+  const n = nutr(r), src = r.image || r.thumb;
+  const steps = (r.instructions || '').split(/\n+/).map(s => s.trim()).filter(s => s && !/^(step\s*)?\d+[.:)]?$/i.test(s));
+  const todayIdx = (new Date().getDay() + 6) % 7;
+  openModal(`<div class="hero">${esc(r.emoji || '🍽️')}${src ? `<img src="${esc(src)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ''}<button class="icon-btn close-x" data-act="close" aria-label="Close">✕</button></div>
+  <div class="modal-body">
+    <div class="row" style="align-items:flex-start;flex-wrap:nowrap">
+      <h2 style="flex:1;font-size:22px">${esc(r.name)}</h2>
+      <button class="star inline" data-act="fav" data-id="${esc(r.id)}" aria-pressed="${isFav(r.id)}" aria-label="Favourite">${isFav(r.id) ? '★' : '☆'}</button>
+    </div>
+    <div class="chips">
+      ${(r.meals || []).map(m => `<span class="pill">${MEAL_LABEL[m]}</span>`).join('')}
+      ${r.category ? `<span class="pill">${esc(r.category)}</span>` : ''}${r.cuisine ? `<span class="pill">${esc(r.cuisine)}</span>` : ''}
+      <span class="pill">Serves ${esc(r.servings || 4)}</span>${r.time ? `<span class="pill">⏱ ${esc(r.time)} min</span>` : ''}
+      ${n.vegetarian ? '<span class="pill">🌱 Vegetarian</span>' : ''}${n.fish ? '<span class="pill">🐟 Fish</span>' : ''}${n.legume ? '<span class="pill">🥫 Legumes</span>' : ''}${n.wgrain ? '<span class="pill">🌾 Whole grain</span>' : ''}
+      ${(r.tags || []).filter(t => !['vegetarian', 'vegan'].includes(t)).slice(0, 4).map(t => `<span class="pill">${esc(t)}</span>`).join('')}
+    </div>
+    <div class="nut-row">
+      <div class="nut"><b>${fmtInt(n.kcal)}</b><span>kcal</span></div>
+      <div class="nut"><b>${Math.round(n.p)} g</b><span>protein</span></div>
+      <div class="nut"><b>${Math.round(n.c)} g</b><span>carbs</span></div>
+      <div class="nut"><b>${Math.round(n.f)} g</b><span>fat</span></div>
+      <div class="nut"><b>${Math.round(n.fb)} g</b><span>fibre</span></div>
+      <div class="nut"><b>${Math.round(n.veg)} g</b><span>fruit & veg</span></div>
+    </div>
+    <p class="small faint" style="margin:6px 0 0">Per serving. ${r.nutrition ? 'From the recipe source where available, otherwise estimated.' : `Estimated from ${n.matched} of ${n.counted} ingredients recognised${n.counted > n.matched ? ' (unrecognised ones are underlined with dots)' : ''}.`}</p>
+    <div class="add-to">
+      <b class="small">Add to plan:</b>
+      <select id="add-day" aria-label="Day">${DAY_NAMES.map((dn, i) => `<option value="${i}" ${i === todayIdx ? 'selected' : ''}>${dn}</option>`).join('')}</select>
+      <select id="add-meal" aria-label="Meal">${MEALS.map(m => `<option value="${m}" ${(r.meals || [])[0] === m ? 'selected' : ''}>${MEAL_LABEL[m]}</option>`).join('')}</select>
+      <button class="btn sm primary" data-act="add-to-plan" data-id="${esc(r.id)}">Add</button>
+      <span class="small faint">(week of ${fmtShort(dateOf(S.week))})</span>
+    </div>
+    <div class="detail-cols">
+      <div><h3>Ingredients</h3><ul>${(r.ingredients || []).map(l => { const p = parseLine(l); return /:\s*$/.test(l) ? `<li style="list-style:none;margin-left:-20px;font-weight:650">${esc(l)}</li>` : `<li class="${p.key && !p.entry ? 'ing-unk' : ''}" ${p.key && !p.entry ? 'title="Not recognised for nutrition estimates"' : ''}>${esc(l)}</li>`; }).join('')}</ul></div>
+      <div><h3>Method</h3>${steps.length ? `<ol>${steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>` : '<p class="muted small">No method saved.</p>'}</div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    ${r.url ? `<a class="btn ghost" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">Open source ↗</a>` : ''}
+    <span class="spacer"></span>
+    ${r.source === 'user' ? `<button class="btn ghost danger" data-act="delete-recipe" data-id="${esc(r.id)}">Delete</button><button class="btn" data-act="edit-recipe" data-id="${esc(r.id)}">Edit</button>`
+      : `<button class="btn" data-act="edit-recipe" data-id="${esc(r.id)}" title="Save an editable copy to My recipes">Duplicate & edit</button>`}
+  </div>`, {wide: true});
+}
+
+/* ---------- Add / edit recipe ---------- */
+function openEditor(r, focusImport) {
+  const isNew = !r || r.source !== 'user';
+  const v = r || {name: '', meals: ['dinner'], servings: 4, category: '', cuisine: '', tags: [], image: '', url: '', ingredients: [], instructions: ''};
+  openModal(`<div class="modal-head"><h2>${!r ? 'Add recipe' : isNew ? 'Duplicate & edit' : 'Edit recipe'}</h2><button class="icon-btn close-x" data-act="close" aria-label="Close">✕</button></div>
+  <div class="modal-body">
+    ${!r ? `<div class="import-box">
+      <label class="field"><span>Import from a link — paste any recipe page URL and the ingredients are filled in for you</span>
+        <div class="row"><input type="url" id="imp-url" placeholder="https://www.example.com/recipes/…"><button class="btn primary" data-act="imp-fetch">Fetch</button></div></label>
+      <div class="status" id="imp-status"></div>
+      <details style="margin-top:6px"><summary class="small muted" style="cursor:pointer">Site blocked? Paste the recipe text (or page source) instead</summary>
+        <textarea id="imp-text" rows="5" placeholder="Paste the page text here — it needs an “Ingredients” heading, or just paste one ingredient per line." style="margin-top:6px"></textarea>
+        <button class="btn sm" data-act="imp-parse" style="margin-top:6px">Parse text</button></details>
+    </div>` : ''}
+    <form id="rform" class="form-grid" autocomplete="off">
+      <label class="field full"><span>Name</span><input type="text" name="name" required value="${esc(v.name)}"></label>
+      <div class="field"><span>Good for</span><div class="row">${MEALS.map(m => `<label class="chk"><input type="checkbox" name="meal" value="${m}" ${(v.meals || []).includes(m) ? 'checked' : ''}> ${MEAL_LABEL[m]}</label>`).join('')}</div></div>
+      <label class="field"><span>Servings</span><input type="number" name="servings" min="1" max="50" value="${esc(v.servings || 4)}"></label>
+      <label class="field"><span>Category</span><input type="text" name="category" value="${esc(v.category)}" placeholder="e.g. Pasta, Curry, Salad"></label>
+      <label class="field"><span>Cuisine</span><input type="text" name="cuisine" value="${esc(v.cuisine)}" placeholder="e.g. Italian"></label>
+      <label class="field"><span>Tags (comma separated)</span><input type="text" name="tags" value="${esc((v.tags || []).join(', '))}" placeholder="vegetarian, quick"></label>
+      <label class="field"><span>Image URL (optional)</span><input type="url" name="image" value="${esc(v.image)}"></label>
+      <label class="field full"><span>Source link (optional)</span><input type="url" name="url" value="${esc(v.url)}"></label>
+      <label class="field full"><span>Ingredients — one per line, e.g. “2 tbsp olive oil”</span><textarea name="ingredients" rows="9">${esc((v.ingredients || []).join('\n'))}</textarea></label>
+      <div class="field full small" id="ing-preview"></div>
+      <label class="field full"><span>Method — one step per line</span><textarea name="instructions" rows="6">${esc(v.instructions || '')}</textarea></label>
+      <input type="hidden" name="nutrition" value="${esc(v.nutrition ? JSON.stringify(v.nutrition) : '')}">
+      <input type="hidden" name="time" value="${esc(v.time || '')}">
+    </form>
+  </div>
+  <div class="modal-foot"><button class="btn ghost" data-act="close">Cancel</button><button class="btn primary" data-act="save-recipe" data-id="${!isNew ? esc(r.id) : ''}" data-from="${r && isNew ? esc(r.id) : ''}">Save recipe</button></div>`, {wide: true});
+  updateIngPreview();
+  setTimeout(() => (focusImport ? $('#imp-url') : $('#rform [name=name]'))?.focus(), 30);
+}
+function formRecipeDraft() {
+  const f = $('#rform'); if (!f) return null;
+  const fd = new FormData(f);
+  let nutrition = null; try { nutrition = fd.get('nutrition') ? JSON.parse(fd.get('nutrition')) : null; } catch {}
+  return {
+    name: String(fd.get('name') || '').trim(), meals: fd.getAll('meal'), servings: Math.max(1, +fd.get('servings') || 4),
+    category: String(fd.get('category') || '').trim(), cuisine: String(fd.get('cuisine') || '').trim(),
+    tags: String(fd.get('tags') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+    image: String(fd.get('image') || '').trim(), url: String(fd.get('url') || '').trim(),
+    ingredients: String(fd.get('ingredients') || '').split('\n').map(s => s.trim()).filter(Boolean),
+    instructions: String(fd.get('instructions') || '').trim(), nutrition, time: +fd.get('time') || null
+  };
+}
+function updateIngPreview() {
+  const el = $('#ing-preview'), d = formRecipeDraft(); if (!el || !d) return;
+  if (!d.ingredients.length) { el.innerHTML = ''; return; }
+  const n = nutr({...d, id: '__draft', _v: Math.random()});
+  const unk = d.ingredients.filter(l => { const p = parseLine(l); return p.key && !p.entry; });
+  el.innerHTML = `<span class="muted">≈ <b>${fmtInt(n.kcal)}</b> kcal · ${Math.round(n.p)} g protein · ${Math.round(n.fb)} g fibre per serving — recognised ${n.matched}/${n.counted} ingredients${unk.length ? `. Not recognised: <i>${esc(unk.slice(0, 5).join('; '))}${unk.length > 5 ? '…' : ''}</i>` : ''}${d.nutrition ? ' (source nutrition data will be used where available)' : ''}</span>`;
+}
+function fillForm(res) {
+  const f = $('#rform'); if (!f) return;
+  const set = (n, v) => { if (v != null && v !== '') f.elements[n].value = v; };
+  set('name', res.name); set('servings', res.servings); set('category', res.category); set('cuisine', res.cuisine);
+  set('image', res.image); set('url', res.url); set('ingredients', (res.ingredients || []).join('\n')); set('instructions', res.instructions);
+  f.elements.nutrition.value = res.nutrition ? JSON.stringify(res.nutrition) : '';
+  f.elements.time.value = res.time || '';
+  if (res.meals) $$('input[name=meal]', f).forEach(c => c.checked = res.meals.includes(c.value));
+  updateIngPreview();
+}
+function saveRecipe(btn) {
+  const d = formRecipeDraft();
+  if (!d.name) { toast('Give the recipe a name.'); $('#rform [name=name]').focus(); return; }
+  if (!d.ingredients.length) { toast('Add at least one ingredient.'); $('#rform [name=ingredients]').focus(); return; }
+  const id = btn.dataset.id, from = btn.dataset.from ? getRecipe(btn.dataset.from) : null;
+  let r;
+  if (id) { r = S.user.find(x => x.id === id); Object.assign(r, d, {_v: (r._v || 0) + 1}); }
+  else {
+    r = {id: uid('u-'), ...d, source: 'user', emoji: from?.emoji || '🍽️', _v: 1};
+    if (!d.nutrition) delete r.nutrition;
+    S.user.push(r);
+    if (from && isFav(from.id)) S.favs.add(r.id), save.favs();
+  }
+  r._hay = undefined;
+  save.user(); reindex(); closeModal(); toast('Recipe saved'); render();
+}
+
+/* ---------- Shopping ---------- */
+function renderShop() {
+  const wk = S.week, checked = S.checked[wk] || {}, st = S.settings;
+  const items = buildShopping(wk);
+  const hiddenStaples = items.filter(it => it.staple).length;
+  const groups = {};
+  items.forEach(it => {
+    if (st.hideStaples && it.staple) return;
+    const done = !!checked[it.key];
+    if (st.hideChecked && done) return;
+    (groups[it.aisle] ||= []).push({...it, done, extra: false});
+  });
+  S.extras.forEach(x => {
+    if (st.hideChecked && x.done) return;
+    (groups[x.aisle] ||= []).push({key: x.id, name: x.name, qtyText: x.qty, done: x.done, extra: true});
+  });
+  const totalOpen = Object.values(groups).flat().filter(i => !i.done).length;
+  const totalAll = Object.values(groups).flat().length;
+  app.innerHTML = `${weekBar()}
+  <div class="toolbar">
+    <span class="pill"><b>${totalOpen}</b> to buy${totalAll - totalOpen ? ` · ${totalAll - totalOpen} ticked` : ''}</span>
+    <span class="pill">Scaled for <b>${st.people}</b> ${+st.people === 1 ? 'person' : 'people'}</span>
+    <label class="chk small"><input type="checkbox" data-set="hideChecked" ${st.hideChecked ? 'checked' : ''}> Hide ticked</label>
+    <label class="chk small"><input type="checkbox" data-set="hideStaples" ${st.hideStaples ? 'checked' : ''}> Hide pantry staples${hiddenStaples ? ` (${hiddenStaples})` : ''}</label>
+    <span class="spacer"></span>
+    <button class="btn sm" data-act="shop-copy">📋 Copy</button>
+    <button class="btn sm" data-act="shop-print">🖨 Print</button>
+    <button class="btn sm ghost" data-act="shop-uncheck">Untick all</button>
+    <button class="btn sm ghost danger" data-act="shop-clear-extras" title="Remove ticked items you added manually">Remove ticked extras</button>
+  </div>
+  <form class="add-item panel" id="add-item" autocomplete="off">
+    <input type="text" name="name" placeholder="Add anything — e.g. dish soap, coffee, cat food" aria-label="Item" required>
+    <input type="text" name="qty" placeholder="Qty (optional)" aria-label="Quantity">
+    <select name="aisle" aria-label="Category">${AISLES.map(([k, n, i]) => `<option value="${k}" ${k === 'hh' ? 'selected' : ''}>${i} ${n}</option>`).join('')}</select>
+    <button class="btn primary" type="submit">Add</button>
+  </form>
+  ${totalAll ? `<div class="shop-cols">${AISLES.filter(([k]) => groups[k]).map(([k, n, ic]) => {
+    const list = groups[k].sort((a, b) => a.done - b.done || a.name.localeCompare(b.name));
+    return `<section class="aisle panel"><h3><span aria-hidden="true">${ic}</span>${esc(n)}<span class="cnt">${list.filter(i => !i.done).length}</span></h3><ul>${list.map(i => `
+      <li class="${i.done ? 'done' : ''}">
+        <label><input type="checkbox" data-act="${i.extra ? 'extra-chk' : 'chk'}" data-key="${esc(i.key)}" ${i.done ? 'checked' : ''}>
+          <span style="flex:1;min-width:0"><span class="it-name">${esc(i.name)}</span>${i.extra ? '<span class="tag-extra">extra</span>' : ''}
+          ${!i.extra ? `<div class="it-for">${i.variantText ? esc(i.variantText) + ' · ' : ''}${esc([...i.recipes].slice(0, 3).join(', '))}${i.recipes.size > 3 ? ` +${i.recipes.size - 3}` : ''}</div>` : ''}</span>
+          <span class="it-qty">${esc(i.qtyText || '')}</span></label>
+        ${i.extra ? `<button class="icon-btn" data-act="extra-del" data-key="${esc(i.key)}" aria-label="Remove">✕</button>` : ''}
+      </li>`).join('')}</ul></section>`;
+  }).join('')}</div>` : `<div class="empty-state panel">Your list is empty. Plan some meals for this week, or add items above.<br><br><button class="btn primary" data-act="tab" data-tab="plan">Go to the planner</button></div>`}`;
+}
+function shoppingText() {
+  const wk = S.week, checked = S.checked[wk] || {}, st = S.settings;
+  const out = [`Shopping list — week of ${fmtShort(dateOf(wk))}`];
+  const groups = {};
+  buildShopping(wk).forEach(it => { if (st.hideStaples && it.staple) return; if (checked[it.key]) return; (groups[it.aisle] ||= []).push(`${it.name}${it.qtyText ? ' — ' + it.qtyText : ''}`); });
+  S.extras.forEach(x => { if (!x.done) (groups[x.aisle] ||= []).push(`${x.name}${x.qty ? ' — ' + x.qty : ''}`); });
+  AISLES.forEach(([k, n]) => { if (groups[k]) { out.push('', n.toUpperCase()); groups[k].sort().forEach(l => out.push('☐ ' + l)); } });
+  return out.join('\n');
+}
+
+/* ---------- Nutrition ---------- */
+function weekStats(wk) {
+  const T = targets();
+  const days = [], meals = [];
+  for (let d = 0; d < 7; d++) {
+    const day = {d, kcal: 0, p: 0, c: 0, f: 0, fb: 0, veg: 0, sug: 0, count: 0};
+    for (const m of MEALS) {
+      const r = slotRecipe(getSlot(wk, d, m)); if (!r) continue;
+      const n = nutr(r); meals.push({d, m, r, n});
+      for (const k of ['kcal', 'p', 'c', 'f', 'fb', 'veg', 'sug']) day[k] += n[k];
+      day.count++;
+    }
+    days.push(day);
+  }
+  const act = days.filter(x => x.count);
+  const avg = {};
+  for (const k of ['kcal', 'p', 'c', 'f', 'fb', 'veg', 'sug']) avg[k] = act.length ? act.reduce((s, x) => s + x[k], 0) / act.length : 0;
+  const macroK = avg.p * 4 + avg.c * 4 + avg.f * 9 || 1;
+  const pct = {p: avg.p * 4 / macroK * 100, c: avg.c * 4 / macroK * 100, f: avg.f * 9 / macroK * 100};
+  const scale = act.length ? 7 / act.length : 1;
+  const c = {
+    fish: meals.filter(x => x.n.fish).length, red: meals.filter(x => x.n.red || x.n.proc).length, proc: meals.filter(x => x.n.proc).length,
+    redg: meals.reduce((s, x) => s + x.n.redg, 0) * scale, legume: meals.filter(x => x.n.legume).length, wgrain: meals.filter(x => x.n.wgrain).length,
+    veg: meals.filter(x => x.n.vegetarian).length, unique: new Set(meals.map(x => x.r.id)).size, planned: meals.length,
+    lowcov: meals.filter(x => x.n.coverage < 0.6).length
+  };
+  // scoring
+  const checks = [];
+  const add = (key, ok, warn) => checks.push({key, s: ok ? 1 : warn ? 0.5 : 0});
+  add('fibre', avg.fb >= T.fibre * 0.9, avg.fb >= T.fibre * 0.6);
+  add('protein', avg.p >= T.protein * 0.9, avg.p >= T.protein * 0.65);
+  add('veg', avg.veg >= T.veg * 0.9, avg.veg >= T.veg * 0.55);
+  add('fat', pct.f <= T.fatHi && pct.f >= T.fatLo, pct.f <= T.fatHi + 7);
+  add('sugar', avg.sug <= T.sugar, avg.sug <= T.sugar * 1.6);
+  add('fish', c.fish >= 2, c.fish >= 1);
+  add('red', c.redg <= T.redMax, c.redg <= T.redMax * 1.5);
+  add('legume', c.legume >= 2, c.legume >= 1);
+  add('wgrain', c.wgrain >= 5, c.wgrain >= 2);
+  const score = checks.reduce((s, x) => s + x.s, 0) / checks.length;
+  const grade = !meals.length ? '–' : score >= 0.9 ? 'A' : score >= 0.75 ? 'B' : score >= 0.6 ? 'C' : score >= 0.45 ? 'D' : 'E';
+  return {T, days, meals, active: act.length, avg, pct, c, score, grade};
+}
+function status(level) {
+  const map = {good: ['st-good', '✓', 'On track'], low: ['st-warn', '▼', 'Low'], vlow: ['st-crit', '▼', 'Very low'], high: ['st-serious', '▲', 'High'], vhigh: ['st-crit', '▲', 'Too high'], na: ['st-na', '–', 'No data']};
+  const [c, i, l] = map[level];
+  return `<span class="status-badge ${c}"><span class="dot" aria-hidden="true">${i}</span>${l}</span>`;
+}
+function tile(label, val, unit, targetText, frac, targetFrac, level) {
+  return `<div class="tile panel"><div class="tile-label">${label}</div>
+    <div class="tile-val">${val}<small>${unit}</small></div>
+    <div class="meter" role="img" aria-label="${label}: ${val}${unit}, ${targetText}"><i style="width:${Math.max(0, Math.min(100, frac * 100))}%"></i>${targetFrac != null ? `<b style="left:calc(${Math.min(100, targetFrac * 100)}% - 1px)"></b>` : ''}</div>
+    <div class="row" style="justify-content:space-between"><span class="tile-target">${targetText}</span>${status(level)}</div></div>`;
+}
+function lvlMin(v, t) { return v >= t * 0.9 ? 'good' : v >= t * 0.6 ? 'low' : 'vlow'; }
+function lvlMax(v, t) { return v <= t ? 'good' : v <= t * 1.5 ? 'high' : 'vhigh'; }
+function suggestions(metric, mealTypes, wk, k = 4) {
+  const inWeek = new Set(); eachSlot((d, m) => { const s = getSlot(wk, d, m); if (s) inWeek.add(s.id); });
+  const f = {
+    fibre: n => n.fb, protein: n => n.p, veg: n => n.veg, fish: n => n.fish ? 1 + n.veg / 500 : -1, legume: n => n.legume ? n.fb : -1,
+    wgrain: n => n.wgrain ? n.fb : -1, lowred: n => n.vegetarian ? n.p + n.fb : -1, lowfat: n => n.kcal ? -n.f * 9 / n.kcal + n.p / 100 : -1, lowsugar: n => n.sug < 8 ? n.fb : -1
+  }[metric];
+  return ALL.filter(r => !inWeek.has(r.id) && (r.meals || []).some(m => mealTypes.includes(m)) && nutr(r).coverage >= 0.6 && f(nutr(r)) > 0)
+    .map(r => ({r, s: f(nutr(r)) * (isFav(r.id) ? 1.3 : 1) * (0.85 + Math.random() * 0.3)}))
+    .sort((a, b) => b.s - a.s).slice(0, k).map(x => x.r);
+}
+function swapIdea(st, metric, label, unit) {
+  const val = n => metric === 'fibre' ? n.fb : metric === 'protein' ? n.p : n.veg;
+  const cands = st.meals.slice().sort((a, b) => val(a.n) - val(b.n));
+  const worst = cands[0]; if (!worst) return '';
+  const best = suggestions(metric, [worst.m], S.week, 6).find(r => val(nutr(r)) > val(worst.n) * 1.6 + 2);
+  if (!best) return '';
+  return `<div class="swap"><span>Swap <b>${DAY_NAMES[worst.d]} ${MEAL_LABEL[worst.m].toLowerCase()}</b>: ${esc(worst.r.name)} (${Math.round(val(worst.n))} ${unit} ${label}) → <b>${esc(best.name)}</b> (${Math.round(val(nutr(best)))} ${unit})</span>
+    <button class="btn sm" data-act="swap" data-d="${worst.d}" data-m="${worst.m}" data-id="${esc(best.id)}">Swap it</button></div>`;
+}
+function suggChips(list) { return list.length ? `<div class="sugg">${list.map(r => `<button data-act="open" data-id="${esc(r.id)}">${esc(r.emoji || '')} ${esc(r.name)}</button>`).join('')}</div>` : ''; }
+function renderNutrition() {
+  const st = weekStats(S.week), T = st.T, a = st.avg, c = st.c;
+  if (!st.meals.length) {
+    app.innerHTML = `${weekBar()}<div class="empty-state panel">Nothing planned this week yet — add some meals and a nutrition report appears here.<br><br><button class="btn primary" data-act="tab" data-tab="plan">Go to the planner</button></div>`;
+    return;
+  }
+  const recs = [], goods = [];
+  const kcalShare = a.kcal / T.kcal;
+  if (st.c.planned < 21) recs.push({lvl: 'na', title: `${21 - st.c.planned} meal slot${21 - st.c.planned === 1 ? '' : 's'} still empty`, text: `Daily figures are averaged over the ${st.active} day${st.active === 1 ? '' : 's'} with at least one meal, so empty slots make days look lighter than they will be. Fill them (🎲 Fill empty slots) for a complete picture.`});
+  if (kcalShare < 0.7) recs.push({lvl: 'low', title: 'Meals look light on energy', text: `Your planned meals average ${fmtInt(a.kcal)} kcal a day against a ${fmtInt(T.kcal)} kcal target. Snacks usually supply 10–20% of intake, but this gap is larger — consider bigger portions, adding a side (bread, rice, potatoes), or a more substantial breakfast.`});
+  else if (kcalShare > 1.05) recs.push({lvl: 'high', title: 'Meals alone exceed your energy target', text: `Meals average ${fmtInt(a.kcal)} kcal a day, above your ${fmtInt(T.kcal)} kcal target before any snacks or drinks. Lighter lunches, smaller portions of the richest dinners, or more vegetable-heavy dishes would bring this down.`, sugg: suggestions('lowfat', ['lunch', 'dinner'], S.week)});
+  else goods.push(`Energy is in a sensible range (${fmtInt(a.kcal)} kcal/day from meals, leaving room for snacks).`);
+  if (a.fb < T.fibre * 0.9) recs.push({lvl: a.fb < T.fibre * 0.6 ? 'vlow' : 'low', title: 'Fibre is below target', text: `You're averaging ${Math.round(a.fb)} g of fibre a day against the ${T.fibre} g most adults need. Fibre supports digestion, blood sugar and heart health. Easy wins: swap white rice/pasta/bread for whole-grain versions, add a tin of beans or lentils to a stew or salad, and start the day with oats.`, sugg: suggestions('fibre', ['breakfast', 'lunch', 'dinner'], S.week), swap: swapIdea(st, 'fibre', 'fibre', 'g')});
+  else goods.push(`Plenty of fibre (${Math.round(a.fb)} g/day).`);
+  if (a.p < T.protein * 0.9) recs.push({lvl: a.p < T.protein * 0.65 ? 'vlow' : 'low', title: 'Protein could be higher', text: `Meals provide about ${Math.round(a.p)} g protein a day; aim for roughly ${T.protein} g. Include a palm-sized portion of fish, poultry, eggs, tofu, beans or Greek yogurt in every meal — breakfast is often the easiest place to add some.`, sugg: suggestions('protein', ['breakfast', 'lunch', 'dinner'], S.week), swap: swapIdea(st, 'protein', 'protein', 'g')});
+  else goods.push(`Protein target met (${Math.round(a.p)} g/day).`);
+  if (a.veg < T.veg * 0.9) recs.push({lvl: a.veg < T.veg * 0.55 ? 'vlow' : 'low', title: 'More fruit and vegetables needed', text: `Meals contain roughly ${Math.round(a.veg)} g of fruit and veg a day — the guideline is at least ${T.veg} g (five 80 g portions). Add a side salad or steamed greens to dinners, fruit to breakfast, and extra veg to sauces and soups.`, sugg: suggestions('veg', ['lunch', 'dinner'], S.week), swap: swapIdea(st, 'veg', 'fruit & veg', 'g')});
+  else goods.push(`Good fruit & veg intake (${Math.round(a.veg)} g/day).`);
+  if (c.fish < 2) recs.push({lvl: c.fish === 0 ? 'vlow' : 'low', title: `Only ${c.fish} fish meal${c.fish === 1 ? '' : 's'} this week`, text: 'Guidelines suggest two portions of fish a week, one of them oily (salmon, mackerel, sardines, trout) for omega-3 fats.', sugg: suggestions('fish', ['lunch', 'dinner'], S.week)});
+  else goods.push(`${c.fish} fish meals — meets the two-a-week guideline.`);
+  if (c.redg > T.redMax) recs.push({lvl: c.redg > T.redMax * 1.5 ? 'vhigh' : 'high', title: 'Red & processed meat is on the high side', text: `About ${Math.round(c.redg)} g per person this week across ${c.red} meal${c.red === 1 ? '' : 's'}${c.proc ? ` (${c.proc} with processed meat)` : ''}. Keeping red meat under ~350–500 g a week and processed meat to a minimum lowers bowel-cancer risk. Try swapping one or two for fish, poultry or a bean-based dish.`, sugg: suggestions('lowred', ['dinner'], S.week)});
+  else if (c.red) goods.push(`Red meat kept moderate (${Math.round(c.redg)} g/person this week).`);
+  if (c.legume < 2) recs.push({lvl: 'low', title: 'Add beans, lentils or chickpeas', text: `Only ${c.legume} meal${c.legume === 1 ? '' : 's'} feature legumes. They're cheap, high in fibre and protein, and count towards your veg — aim for at least two or three meals a week.`, sugg: suggestions('legume', ['lunch', 'dinner'], S.week)});
+  else goods.push(`${c.legume} meals with beans, lentils or chickpeas.`);
+  if (c.wgrain < 5) recs.push({lvl: c.wgrain < 2 ? 'vlow' : 'low', title: 'Few whole grains', text: `${c.wgrain} meal${c.wgrain === 1 ? '' : 's'} contain whole grains. Oats, wholemeal bread, brown rice, quinoa or wholewheat pasta at least once a day help with fibre and keep you fuller for longer.`, sugg: suggestions('wgrain', ['breakfast', 'lunch', 'dinner'], S.week)});
+  else goods.push(`Whole grains in ${c.wgrain} meals.`);
+  if (st.pct.f > T.fatHi) recs.push({lvl: st.pct.f > T.fatHi + 7 ? 'vhigh' : 'high', title: 'Fat makes up a large share of energy', text: `${Math.round(st.pct.f)}% of calories come from fat (guideline 20–35%). Swap cream for yogurt or crème fraîche, measure oil rather than pouring, and pick leaner cuts and lower-fat cheeses.`, sugg: suggestions('lowfat', ['lunch', 'dinner'], S.week)});
+  else if (st.pct.f < T.fatLo) recs.push({lvl: 'low', title: 'Very low in fat', text: `Only ${Math.round(st.pct.f)}% of energy is from fat. Some healthy fats help you absorb vitamins A, D, E and K — add olive oil, nuts, seeds, avocado or oily fish.`});
+  else goods.push(`Balanced fat (${Math.round(st.pct.f)}% of energy).`);
+  if (a.sug > T.sugar) recs.push({lvl: a.sug > T.sugar * 1.6 ? 'vhigh' : 'high', title: 'Added sugar is high', text: `Roughly ${Math.round(a.sug)} g of added sugar a day from recipes (sugar, honey, syrups, chocolate, jam) — the recommended maximum is ${T.sugar} g. Cut syrup toppings, use fruit for sweetness, and check sauces.`, sugg: suggestions('lowsugar', ['breakfast'], S.week)});
+  const repeats = [...st.meals.reduce((mp, x) => mp.set(x.r.name, (mp.get(x.r.name) || 0) + 1), new Map())].filter(([, n]) => n >= 3);
+  if (repeats.length) recs.push({lvl: 'na', title: 'Low variety', text: `${repeats.map(([n, k]) => `${esc(n)} appears ${k}×`).join('; ')}. Eating a wider range of foods covers more vitamins and minerals.`});
+  else if (c.unique >= Math.min(12, c.planned)) goods.push(`Good variety — ${c.unique} different recipes.`);
+  if (c.lowcov) recs.push({lvl: 'na', title: 'Some estimates are rough', text: `${c.lowcov} meal${c.lowcov === 1 ? ' has' : 's have'} several ingredients the estimator didn't recognise, so their nutrition may be understated.`});
+  const lvlIcon = l => ({good: ['st-good', '✓'], low: ['st-warn', '!'], vlow: ['st-crit', '!'], high: ['st-serious', '!'], vhigh: ['st-crit', '!'], na: ['st-na', 'i']}[l]);
+  const intro = {A: 'An excellent, well-balanced week.', B: 'A solid week with a couple of things to tweak.', C: 'A reasonable base, but several areas could be improved.', D: 'This week is missing some important food groups.', E: 'This plan needs rebalancing — see the suggestions below.'}[st.grade] || '';
+
+  app.innerHTML = `${weekBar()}
+  <p class="small muted" style="margin:-4px 0 14px">Per person, per day, from <b>${c.planned}</b> planned meal${c.planned === 1 ? '' : 's'} across ${st.active} day${st.active === 1 ? '' : 's'}. Snacks and drinks aren't included. Values are estimates from ingredient lists.</p>
+  <div class="tiles">
+    ${tile('Energy', fmtInt(a.kcal), ' kcal', `target ${fmtInt(T.kcal)} (incl. snacks)`, a.kcal / (T.kcal * 1.25), 0.8, kcalShare < 0.7 ? 'low' : kcalShare > 1.05 ? 'high' : 'good')}
+    ${tile('Protein', Math.round(a.p), ' g', `target ≥ ${T.protein} g`, a.p / (T.protein * 1.5), 1 / 1.5, lvlMin(a.p, T.protein))}
+    ${tile('Fibre', Math.round(a.fb), ' g', `target ≥ ${T.fibre} g`, a.fb / (T.fibre * 1.5), 1 / 1.5, lvlMin(a.fb, T.fibre))}
+    ${tile('Fruit & veg', Math.round(a.veg), ' g', `target ≥ ${T.veg} g`, a.veg / (T.veg * 1.5), 1 / 1.5, lvlMin(a.veg, T.veg))}
+    ${tile('Fat', Math.round(st.pct.f), '% kcal', 'target 20–35% of energy', st.pct.f / 50, 35 / 50, st.pct.f > T.fatHi + 7 ? 'vhigh' : st.pct.f > T.fatHi ? 'high' : st.pct.f < T.fatLo ? 'low' : 'good')}
+    ${tile('Added sugar', Math.round(a.sug), ' g', `limit ≤ ${T.sugar} g`, a.sug / (T.sugar * 2), 0.5, lvlMax(a.sug, T.sugar))}
+  </div>
+  <div class="nutri-grid">
+    <div style="display:grid;gap:14px">
+      <section class="report panel">
+        <div class="grade"><div class="grade-letter" aria-label="Grade ${st.grade}">${st.grade}</div><div><h3 style="font-size:17px">Weekly nutrition report</h3><p class="muted small" style="margin:2px 0 0">${intro}</p></div></div>
+        ${recs.map(r => { const [cls, ic] = lvlIcon(r.lvl); return `<div class="rec"><h4><span class="status-badge ${cls}"><span class="dot" aria-hidden="true">${ic}</span></span>${esc(r.title)}</h4><p>${r.text}</p>${r.swap || ''}${r.sugg ? suggChips(r.sugg) : ''}</div>`; }).join('')}
+        ${goods.length ? `<div class="rec"><h4>What's working</h4><ul class="goodlist">${goods.map(g => `<li>${esc(g)}</li>`).join('')}</ul></div>` : ''}
+      </section>
+    </div>
+    <div style="display:grid;gap:14px">
+      <section class="chart-box panel">
+        <h3>Calories per day by macronutrient</h3>
+        <div class="legend"><span><i style="background:var(--s1)"></i>Protein</span><span><i style="background:var(--s2)"></i>Carbs</span><span><i style="background:var(--s3)"></i>Fat</span><span><i style="background:none;border-top:2px dashed var(--text-2);border-radius:0;height:0;width:14px"></i>Daily target</span></div>
+        <div class="chart" id="chart"></div>
+      </section>
+      <section class="chart-box panel">
+        <h3>Food groups this week</h3>
+        <div class="counts">
+          <div class="count"><b>${c.fish} <span class="small faint">/ 2+</span></b><span>🐟 Fish meals</span></div>
+          <div class="count"><b>${Math.round(c.redg)} g <span class="small faint">/ ≤${T.redMax}</span></b><span>🥩 Red & processed meat per person</span></div>
+          <div class="count"><b>${c.legume} <span class="small faint">/ 2+</span></b><span>🥫 Legume meals</span></div>
+          <div class="count"><b>${c.wgrain} <span class="small faint">/ 5+</span></b><span>🌾 Whole-grain meals</span></div>
+          <div class="count"><b>${c.veg}</b><span>🌱 Vegetarian meals</span></div>
+          <div class="count"><b>${c.unique}</b><span>🍽️ Different recipes</span></div>
+        </div>
+      </section>
+      <section class="chart-box panel">
+        <h3 style="margin-bottom:6px">Day by day</h3>
+        <div class="table-wrap"><table class="data"><thead><tr><th>Day</th><th>Meals</th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Fibre</th><th>F&amp;V</th></tr></thead><tbody>
+        ${st.days.map(d => `<tr><td>${DAY_NAMES[d.d].slice(0, 3)}</td><td>${d.count}</td><td>${d.count ? fmtInt(d.kcal) : '–'}</td><td>${d.count ? Math.round(d.p) + ' g' : '–'}</td><td>${d.count ? Math.round(d.c) + ' g' : '–'}</td><td>${d.count ? Math.round(d.f) + ' g' : '–'}</td><td>${d.count ? Math.round(d.fb) + ' g' : '–'}</td><td>${d.count ? Math.round(d.veg) + ' g' : '–'}</td></tr>`).join('')}
+        </tbody></table></div>
+      </section>
+    </div>
+  </div>`;
+  drawChart(st);
+}
+function drawChart(st) {
+  const el = $('#chart'); if (!el) return;
+  const W = Math.max(280, el.clientWidth), H = 230, m = {l: 40, r: 8, t: 14, b: 26};
+  const T = st.T.kcal;
+  const maxV = Math.max(T * 1.1, ...st.days.map(d => d.p * 4 + d.c * 4 + d.f * 9));
+  const step = maxV > 3000 ? 1000 : 500, top = Math.ceil(maxV / step) * step;
+  const ih = H - m.t - m.b, iw = W - m.l - m.r, band = iw / 7, bw = Math.min(40, band * 0.56);
+  const y = v => m.t + ih * (1 - v / top);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Stacked bar chart of daily calories from protein, carbs and fat">`;
+  for (let v = 0; v <= top; v += step) svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(${v === 0 ? '--axis' : '--grid'})" stroke-width="1"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)" style="font-variant-numeric:tabular-nums">${v ? (v / 1000) + 'k' : 0}</text>`;
+  st.days.forEach((d, i) => {
+    const cx = m.l + band * i + band / 2, x = cx - bw / 2;
+    const segs = [['p', d.p * 4, '--s1'], ['c', d.c * 4, '--s2'], ['f', d.f * 9, '--s3']].filter(s => s[1] > 0);
+    let cum = 0;
+    segs.forEach(([k, v, col], j) => {
+      const y1 = y(cum + v), y0 = y(cum) - (j > 0 ? 2 : 0), h = Math.max(0, y0 - y1);
+      if (j === segs.length - 1) {
+        const r = Math.min(4, h, bw / 2);
+        svg += `<path d="M${x},${y0} V${y1 + r} Q${x},${y1} ${x + r},${y1} H${x + bw - r} Q${x + bw},${y1} ${x + bw},${y1 + r} V${y0} Z" fill="var(${col})"/>`;
+      } else svg += `<rect x="${x}" y="${y1}" width="${bw}" height="${h}" fill="var(${col})"/>`;
+      cum += v;
+    });
+    svg += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11.5" fill="var(--text-2)">${DAY_NAMES[i].slice(0, 3)}</text>`;
+    svg += `<rect x="${m.l + band * i}" y="${m.t}" width="${band}" height="${ih}" fill="transparent" data-i="${i}" class="hit"/>`;
+  });
+  svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(T)}" y2="${y(T)}" stroke="var(--text-2)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  svg += `<text x="${W - m.r}" y="${y(T) - 5}" text-anchor="end" font-size="11" fill="var(--text-2)">target ${fmtInt(T)}</text></svg>`;
+  el.innerHTML = svg + '<div class="tooltip hidden" id="tt"></div>';
+  const tt = $('#tt', el);
+  $$('.hit', el).forEach(h => {
+    const show = () => {
+      const d = st.days[+h.dataset.i];
+      const box = el.getBoundingClientRect(), hb = h.getBoundingClientRect();
+      tt.innerHTML = `<b>${DAY_NAMES[d.d]}</b>${d.count ? `<div class="tt-row"><span>Total</span><b>${fmtInt(d.kcal)} kcal</b></div><div class="tt-row"><span>Protein</span><span>${Math.round(d.p)} g · ${fmtInt(d.p * 4)} kcal</span></div><div class="tt-row"><span>Carbs</span><span>${Math.round(d.c)} g · ${fmtInt(d.c * 4)} kcal</span></div><div class="tt-row"><span>Fat</span><span>${Math.round(d.f)} g · ${fmtInt(d.f * 9)} kcal</span></div><div class="tt-row"><span>Meals</span><span>${d.count}/3</span></div>` : '<div class="faint">No meals planned</div>'}`;
+      tt.classList.remove('hidden');
+      const left = Math.min(Math.max(hb.left - box.left + hb.width / 2, 80), box.width - 80);
+      tt.style.left = left + 'px'; tt.style.top = (m.t + 4) + 'px';
+      h.setAttribute('fill', 'color-mix(in srgb, var(--text) 5%, transparent)');
+    };
+    const hide = () => { tt.classList.add('hidden'); h.setAttribute('fill', 'transparent'); };
+    h.addEventListener('mouseenter', show); h.addEventListener('mouseleave', hide);
+    h.addEventListener('touchstart', show, {passive: true});
+  });
+}
+
+/* ---------- Settings ---------- */
+function renderSettings() {
+  const st = S.settings, T = targets();
+  app.innerHTML = `<div class="settings">
+    <h2>Settings</h2>
+    <section class="panel">
+      <h3>Household & targets</h3>
+      <div class="form-grid">
+        <label class="field"><span>People eating (scales the shopping list)</span><input type="number" min="1" max="20" data-set="people" value="${esc(st.people)}"></label>
+        <label class="field"><span>Daily calorie target per person</span><input type="number" min="1000" max="5000" step="50" data-set="kcal" value="${esc(st.kcal)}"></label>
+        <label class="field"><span>Protein target, g/day (blank = 15% of calories → ${T.protein} g)</span><input type="number" min="0" max="300" data-set="protein" value="${st.protein ? esc(st.protein) : ''}"></label>
+        <label class="field"><span>Fibre target, g/day</span><input type="number" min="10" max="80" data-set="fibre" value="${esc(st.fibre)}"></label>
+        <label class="field"><span>Theme</span><select data-set="theme"><option value="auto">Match system</option><option value="light" ${st.theme === 'light' ? 'selected' : ''}>Light</option><option value="dark" ${st.theme === 'dark' ? 'selected' : ''}>Dark</option></select></label>
+      </div>
+    </section>
+    <section class="panel">
+      <h3>Pantry staples</h3>
+      <p class="small muted" style="margin:0">Ingredients you always have. They're hidden from the shopping list when “Hide pantry staples” is ticked. One per line.</p>
+      <textarea rows="6" data-set="staples">${esc(st.staples)}</textarea>
+    </section>
+    <section class="panel">
+      <h3>Recipe sources</h3>
+      <div class="row"><span class="pill"><b>${S.online.length}</b> online recipes cached</span>
+        <button class="btn sm" data-act="load-online">${S.online.length ? '↻ Refresh' : '🌐 Load'} TheMealDB library</button>
+        ${S.online.length ? '<button class="btn sm ghost danger" data-act="clear-online">Remove online recipes</button>' : ''}</div>
+      <label class="field"><span>Extra CORS proxies for link import (tried after the built-in reader; {url} = encoded link, {rawurl} = raw link)</span><textarea rows="3" data-set="proxies">${esc(st.proxies)}</textarea></label>
+    </section>
+    <section class="panel">
+      <h3>Your data</h3>
+      <p class="small muted" style="margin:0">Everything is stored in this browser only. Export a backup to move it to another device.</p>
+      <div class="row">
+        <button class="btn" data-act="export">⬇ Export backup</button>
+        <label class="btn">⬆ Import backup<input type="file" accept="application/json,.json" id="import-file" hidden></label>
+        <span class="spacer"></span>
+        <button class="btn ghost danger" data-act="reset">Reset everything</button>
+      </div>
+    </section>
+    <p class="small faint">Recipe library: built-in recipes plus <a href="https://www.themealdb.com" target="_blank" rel="noopener">TheMealDB</a>. Link import reads the page's schema.org recipe data via the r.jina.ai reader. Nutrition values are estimates from an approximate ingredient table and are not medical advice.</p>
+  </div>`;
+}
+
+/* =====================================================================
+   Modal
+   ===================================================================== */
+let lastFocus = null;
+function openModal(html, {wide} = {}) {
+  lastFocus = document.activeElement;
+  $('#modal-root').innerHTML = `<div class="overlay" data-act="overlay"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true">${html}</div></div>`;
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  $('#modal-root').innerHTML = ''; document.body.style.overflow = ''; S.pick = null;
+  if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
+}
+
+/* =====================================================================
+   Events
+   ===================================================================== */
+const ACT = {
+  tab: el => setTab(el.dataset.tab),
+  week: el => { const d = +el.dataset.d; S.week = d === 0 ? mondayOf(new Date()) : shiftWeek(S.week, d); render(); },
+  rnd: el => randomize(el.dataset.mode),
+  'slot-rnd': el => { const s = el.closest('.slot'); randomize('one', {d: +s.dataset.day, m: s.dataset.meal}); },
+  'slot-pick': el => { const s = el.closest('.slot'); openPicker(+s.dataset.day, s.dataset.meal); },
+  'slot-clear': el => { const s = el.closest('.slot'); setSlot(S.week, +s.dataset.day, s.dataset.meal, null); render(); },
+  'slot-lock': el => { const s = el.closest('.slot'), cur = getSlot(S.week, +s.dataset.day, s.dataset.meal); if (cur) { cur.locked = !cur.locked; save.plan(); render(); } },
+  'copy-last': () => {
+    const prev = S.plan[shiftWeek(S.week, -1)];
+    if (!prev || !Object.keys(prev).length) { toast('Last week has nothing planned.'); return; }
+    if (plannedCount(S.week) && !confirm('Replace this week\'s plan with last week\'s?')) return;
+    S.plan[S.week] = JSON.parse(JSON.stringify(prev)); save.plan(); render(); toast('Copied last week');
+  },
+  'clear-week': () => {
+    if (!plannedCount(S.week)) return;
+    const locked = []; eachSlot((d, m) => { const s = getSlot(S.week, d, m); if (s?.locked) locked.push([d, m, s]); });
+    if (!confirm(`Clear this week's plan${locked.length ? ' (locked meals are kept)' : ''}?`)) return;
+    S.plan[S.week] = {}; locked.forEach(([d, m, s]) => setSlot(S.week, d, m, s)); save.plan(); render();
+  },
+  open: el => openDetail(el.dataset.id),
+  fav: el => {
+    toggleFav(el.dataset.id);
+    $$(`[data-act="fav"][data-id="${CSS.escape(el.dataset.id)}"]`).forEach(b => { b.setAttribute('aria-pressed', String(isFav(el.dataset.id))); b.textContent = isFav(el.dataset.id) ? '★' : '☆'; });
+    if (!$('#modal-root').innerHTML || S.tab !== 'recipes') render();
+  },
+  close: () => closeModal(),
+  overlay: (el, ev) => { if (ev.target === el) closeModal(); },
+  pick: el => { const P = S.pick; setSlot(S.week, P.d, P.m, {id: el.dataset.id, locked: false}); closeModal(); render(); },
+  'pick-special': el => { const P = S.pick; setSlot(S.week, P.d, P.m, {id: el.dataset.id, locked: false}); closeModal(); render(); },
+  'pick-random': () => { const P = S.pick; closeModal(); randomize('one', {d: P.d, m: P.m}); },
+  'pick-more': () => { S.pick.limit += 200; renderPickList(); },
+  'add-to-plan': el => {
+    const d = +$('#add-day').value, m = $('#add-meal').value;
+    setSlot(S.week, d, m, {id: el.dataset.id, locked: false}); closeModal(); render();
+    toast(`Added to ${DAY_NAMES[d]} ${MEAL_LABEL[m].toLowerCase()}`);
+  },
+  swap: el => { setSlot(S.week, +el.dataset.d, el.dataset.m, {id: el.dataset.id, locked: false}); render(); toast('Swapped'); },
+  'new-recipe': el => openEditor(null, !!el.dataset.import),
+  'edit-recipe': el => openEditor(getRecipe(el.dataset.id)),
+  'delete-recipe': el => {
+    const r = getRecipe(el.dataset.id); if (!r || !confirm(`Delete “${r.name}”?`)) return;
+    S.user = S.user.filter(x => x.id !== r.id); S.favs.delete(r.id); save.user(); save.favs(); reindex(); closeModal(); render(); toast('Recipe deleted');
+  },
+  'save-recipe': el => saveRecipe(el),
+  'imp-fetch': async el => {
+    const url = $('#imp-url').value.trim(), stEl = $('#imp-status');
+    if (!/^https?:\/\//i.test(url)) { stEl.className = 'status err'; stEl.textContent = 'Enter a full link starting with http:// or https://'; return; }
+    el.disabled = true; stEl.className = 'status'; stEl.innerHTML = '<span class="spin"></span> Fetching…';
+    try {
+      const res = await importFromUrl(url, msg => { if ($('#imp-status')) $('#imp-status').innerHTML = `<span class="spin"></span> ${esc(msg)}`; });
+      if (!$('#imp-status')) return;
+      if (res) { fillForm(res); $('#imp-status').className = 'status ok'; $('#imp-status').textContent = `✓ Found “${res.name || 'recipe'}” with ${res.ingredients.length} ingredients. Check the details below and save.`; }
+      else { $('#imp-status').className = 'status err'; $('#imp-status').textContent = 'Couldn\'t read a recipe from that page (the site may block readers). Open it, copy the ingredient list and paste it below.'; $('#rform [name=url]').value = url; $('#imp-status').parentElement.querySelector('details').open = true; }
+    } finally { el.disabled = false; }
+  },
+  'imp-parse': () => {
+    const t = $('#imp-text').value; if (!t.trim()) return;
+    let res = /<html|<script|<body/i.test(t) ? fromDoc(new DOMParser().parseFromString(t, 'text/html'), '') : fromText(t, '');
+    if (!res) res = {ingredients: t.split('\n').map(s => s.replace(/^\s*([-*•▢□☐]|\d+[.)])\s+/, '').trim()).filter(Boolean)};
+    fillForm(res); $('#imp-status').className = 'status ok'; $('#imp-status').textContent = `✓ ${res.ingredients.length} ingredient lines added. Check them below.`;
+  },
+  'load-online': () => loadMealDB(false),
+  'clear-online': () => { if (!confirm('Remove all cached online recipes? (Favourites and plans that use them will lose them.)')) return; S.online = []; save.online(); reindex(); render(); },
+  'search-online': async el => {
+    el.disabled = true; el.innerHTML = '<span class="spin"></span> Searching…';
+    try { const {found, added} = await searchMealDB(S.ui.q); toast(found ? `Found ${found} online (${added} new)` : 'No online matches'); }
+    catch { toast('Could not reach TheMealDB'); }
+    render();
+  },
+  'lib-more': () => { S.ui.limit += 60; render(); },
+  chk: el => { const wk = S.week; (S.checked[wk] ||= {})[el.dataset.key] = el.checked; if (!el.checked) delete S.checked[wk][el.dataset.key]; save.checked(); render(); },
+  'extra-chk': el => { const x = S.extras.find(e => e.id === el.dataset.key); if (x) { x.done = el.checked; save.extras(); render(); } },
+  'extra-del': el => { S.extras = S.extras.filter(e => e.id !== el.dataset.key); save.extras(); render(); },
+  'shop-copy': async () => {
+    const t = shoppingText();
+    try { await navigator.clipboard.writeText(t); toast('Shopping list copied'); }
+    catch { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Shopping list copied'); }
+  },
+  'shop-print': () => window.print(),
+  'shop-uncheck': () => { delete S.checked[S.week]; S.extras.forEach(x => x.done = false); save.checked(); save.extras(); render(); },
+  'shop-clear-extras': () => { S.extras = S.extras.filter(x => !x.done); save.extras(); render(); },
+  export: () => {
+    const data = {app: 'meal-planner', version: 1, exported: new Date().toISOString(), settings: S.settings, user: S.user, favs: [...S.favs], plan: S.plan, extras: S.extras, checked: S.checked};
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], {type: 'application/json'}));
+    a.download = `meal-planner-backup-${isoDate(new Date())}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  },
+  reset: () => {
+    if (!confirm('Delete all your recipes, favourites, plans and settings from this browser?')) return;
+    Object.keys(localStorage).filter(k => k.startsWith('mp_')).forEach(k => localStorage.removeItem(k));
+    location.reload();
+  }
+};
+
+document.addEventListener('click', ev => {
+  const tabBtn = ev.target.closest('#tabs button'); if (tabBtn) { setTab(tabBtn.dataset.tab); return; }
+  const el = ev.target.closest('[data-act]'); if (!el) return;
+  const fn = ACT[el.dataset.act]; if (!fn) return;
+  if (el.tagName === 'INPUT') { fn(el, ev); return; }
+  if (el.dataset.act !== 'overlay') ev.preventDefault();
+  fn(el, ev);
+});
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('#modal-root').innerHTML) closeModal(); });
+
+let searchTimer;
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.id === 'lib-q') { clearTimeout(searchTimer); searchTimer = setTimeout(() => { S.ui.q = t.value; S.ui.limit = 60; const pos = t.selectionStart; render(); const n = $('#lib-q'); n.focus(); n.setSelectionRange(pos, pos); }, 180); }
+  else if (t.id === 'pick-q') { S.pick.q = t.value; S.pick.limit = 120; renderPickList(); }
+  else if (t.closest('#rform') && (t.name === 'ingredients' || t.name === 'servings')) { clearTimeout(searchTimer); searchTimer = setTimeout(updateIngPreview, 250); }
+});
+document.addEventListener('change', ev => {
+  const t = ev.target;
+  if (t.id === 'pick-fav') { S.pick.fav = t.checked; renderPickList(); return; }
+  if (t.id === 'pick-any') { S.pick.any = t.checked; renderPickList(); return; }
+  if (t.dataset.ui) { S.ui[t.dataset.ui] = t.type === 'checkbox' ? t.checked : t.value; S.ui.limit = 60; render(); return; }
+  if (t.dataset.rnd) { S.settings.rnd[t.dataset.rnd] = t.type === 'checkbox' ? t.checked : t.value; save.settings(); return; }
+  if (t.dataset.rndMeal) { S.settings.rnd.meals[t.dataset.rndMeal] = t.checked; save.settings(); return; }
+  if (t.dataset.set) {
+    const k = t.dataset.set;
+    S.settings[k] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? (t.value === '' ? 0 : +t.value) : t.value;
+    if (k === 'people') S.settings.people = Math.max(1, Math.min(20, +t.value || 1));
+    save.settings();
+    if (k === 'theme') applyTheme();
+    if (S.tab !== 'settings') render();
+    return;
+  }
+  if (t.id === 'import-file' && t.files[0]) {
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const d = JSON.parse(rd.result);
+        if (d.app !== 'meal-planner') throw new Error('not a backup');
+        if (!confirm('Replace your current data with this backup?')) return;
+        S.settings = {...DEFAULT_SETTINGS, ...d.settings, rnd: {...DEFAULT_SETTINGS.rnd, ...(d.settings?.rnd || {})}};
+        S.user = d.user || []; S.favs = new Set(d.favs || []); S.plan = d.plan || {}; S.extras = d.extras || []; S.checked = d.checked || {};
+        Object.values(save).forEach(f => f()); reindex(); applyTheme(); render(); toast('Backup imported');
+      } catch { toast('That file isn\'t a valid Meal Planner backup.'); }
+    };
+    rd.readAsText(t.files[0]);
+  }
+});
+document.addEventListener('submit', ev => {
+  if (ev.target.id === 'add-item') {
+    ev.preventDefault();
+    const fd = new FormData(ev.target), name = String(fd.get('name')).trim(); if (!name) return;
+    S.extras.push({id: uid('x-'), name, qty: String(fd.get('qty') || '').trim(), aisle: fd.get('aisle'), done: false});
+    save.extras(); render(); $('#add-item [name=name]')?.focus();
+  } else if (ev.target.id === 'rform') { ev.preventDefault(); }
+});
+document.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.id === 'imp-url') { ev.preventDefault(); $('[data-act="imp-fetch"]')?.click(); } });
+
+// drag & drop between slots
+let dragFrom = null;
+document.addEventListener('dragstart', ev => { const s = ev.target.closest?.('.slot[draggable="true"]'); if (!s) return; dragFrom = {d: +s.dataset.day, m: s.dataset.meal}; ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', ''); });
+document.addEventListener('dragover', ev => { const s = ev.target.closest?.('.slot'); if (!s || !dragFrom) return; ev.preventDefault(); $$('.slot.drag-over').forEach(x => x !== s && x.classList.remove('drag-over')); s.classList.add('drag-over'); });
+document.addEventListener('dragleave', ev => { const s = ev.target.closest?.('.slot'); if (s && !s.contains(ev.relatedTarget)) s.classList.remove('drag-over'); });
+document.addEventListener('drop', ev => {
+  const s = ev.target.closest?.('.slot'); if (!s || !dragFrom) return; ev.preventDefault();
+  const to = {d: +s.dataset.day, m: s.dataset.meal};
+  const a = getSlot(S.week, dragFrom.d, dragFrom.m), b = getSlot(S.week, to.d, to.m);
+  setSlot(S.week, to.d, to.m, a); setSlot(S.week, dragFrom.d, dragFrom.m, b);
+  dragFrom = null; render();
+});
+document.addEventListener('dragend', () => { dragFrom = null; $$('.slot.drag-over').forEach(x => x.classList.remove('drag-over')); });
+
+// close the randomizer options popover when clicking elsewhere
+document.addEventListener('click', ev => { $$('details.opts[open]').forEach(d => { if (!d.contains(ev.target)) d.open = false; }); }, true);
+
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (S.tab === 'nutrition') drawChart(weekStats(S.week)); }, 150); });
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+applyTheme();
+reindex();
+render();
+if (!S.settings.onlineTried && !S.online.length) loadMealDB(true);
+</script>
+</body>
+</html>
